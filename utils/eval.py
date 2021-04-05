@@ -6,23 +6,14 @@ Function to evaluation segmentation module
 """
 
 import cv2
-from glob import glob
 import imageio
 from matplotlib import pyplot as plt
-import numpy as np
-from PIL import Image, ImageFont, ImageDraw, ImageEnhance
-import random
+from PIL import Image
 import tensorflow as tf
 from tqdm import tqdm
 
 
-nb_colors = 100
-COLORS = [(random.randint(50, 200),
-           random.randint(50, 200),
-           random.randint(50, 200)) for i in range(nb_colors)]
-
-
-def overlapImgWithSegMap(img, module_output):
+def overlap_img_with_segmap(img, module_output):
     """
     Function to overlap segmentation map with image
 
@@ -37,8 +28,8 @@ def overlapImgWithSegMap(img, module_output):
     depth_min = module_output.min()
     depth_max = module_output.max()
     depth_rescaled = (255 * (module_output - depth_min) / (depth_max - depth_min)).astype("uint8")
-    depth_rescaled_3chn = gray = cv2.cvtColor(depth_rescaled,
-                                              cv2.COLOR_GRAY2RGB)
+    depth_rescaled_3chn = cv2.cvtColor(depth_rescaled,
+                                       cv2.COLOR_GRAY2RGB)
     module_output_3chn = cv2.applyColorMap(depth_rescaled_3chn,
                                            cv2.COLORMAP_RAINBOW)
     module_output_3chn = cv2.resize(module_output_3chn,
@@ -50,7 +41,7 @@ def overlapImgWithSegMap(img, module_output):
 
     return overlap
 
-def preprocessImage(rgb_img, resize_shape=[256,256]):
+def preprocess_image(rgb_img, resize_shape):
     """
     Function to preprocess an image
     Normalization and resized to resize_shape
@@ -72,8 +63,9 @@ def preprocessImage(rgb_img, resize_shape=[256,256]):
     return rgb_img, tensor
 
 
-def pltPredOnImg(module, image, signature='serving_default',
-                 save_path=None, plot_img=False):
+def plt_pred_on_img(module, image, module_input_shape,
+                    signature='serving_default',
+                    save_path=None, plot_img=False):
     """
     Function to infer a module on an image
     Display overlap original image + segmentation map
@@ -81,16 +73,17 @@ def pltPredOnImg(module, image, signature='serving_default',
     Args:
         - module from TensorFlow Hub
         - (str) image path
+        - (list) module_input_shape: expected shape for module
         - (str) signature: signature to get the module result
         - (str) save_path: path to save result overlap
         - (bool) plot_img: boolean for showing result
     """
-    fig = plt.figure(figsize=(8, 8))
+    plt.figure(figsize=(8, 8))
 
-    rgb_img, module_input = preprocessImage(image)
+    rgb_img, module_input = preprocess_image(image, module_input_shape)
     module_output = module.signatures[signature](module_input)
     np_module_output = module_output['default'].numpy().squeeze()
-    overlap = overlapImgWithSegMap(rgb_img, np_module_output)
+    overlap = overlap_img_with_segmap(rgb_img, np_module_output)
 
     if plot_img:
         plt.show(overlap)
@@ -100,8 +93,9 @@ def pltPredOnImg(module, image, signature='serving_default',
     plt.close()
     return overlap
 
-def pltPredOnVideo(video_path, module, out_gif, signature='serving_default',
-                   plot_img=False, fps=30, resize_fact=1, keep_every=1):
+def plot_pred_on_video(video_path, module, module_input_shape,
+                       out_gif, signature='serving_default',
+                       plot_img=False, fps=30, resize_fact=1, keep_every=1):
     """
     Function to infer a module on a video
     Save result into a gif file
@@ -109,6 +103,7 @@ def pltPredOnVideo(video_path, module, out_gif, signature='serving_default',
     Args:
         - (str) video_path: path to the video
         - module from TensorFlow Hub
+        - (list) module_input_shape: expected shape for module
         - (str) out_gif: path to save image result
         - (str) signature: signature to get the module result
         - (bool) plot_img: boolean for showing result
@@ -122,13 +117,14 @@ def pltPredOnVideo(video_path, module, out_gif, signature='serving_default',
     for i in tqdm(range(number_of_frame)):
         if i%keep_every != 0 and keep_every!=1:
             continue
-        return_value, image = cap.read()
+        _, image = cap.read()
         rgb_img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        overlap = pltPredOnImg(module, rgb_img, plot_img=plot_img)
+        overlap = plt_pred_on_img(module, rgb_img, module_input_shape,
+                                  plot_img=plot_img,
+                                  signature=signature)
         overlap = overlap.resize((overlap.size[0]//resize_fact,
                                   overlap.size[1]//resize_fact))
         imgs.append(overlap)
-    del(cap)
 
     imgs[0].save(out_gif, format='GIF',
                  append_images=imgs[1:],
