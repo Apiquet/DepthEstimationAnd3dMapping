@@ -37,8 +37,10 @@ def overlapImgWithSegMap(img, module_output):
     depth_min = module_output.min()
     depth_max = module_output.max()
     depth_rescaled = (255 * (module_output - depth_min) / (depth_max - depth_min)).astype("uint8")
-    depth_rescaled_3chn = gray = cv2.cvtColor(depth_rescaled, cv2.COLOR_GRAY2RGB)
-    module_output_3chn = cv2.applyColorMap(depth_rescaled_3chn, cv2.COLORMAP_RAINBOW)
+    depth_rescaled_3chn = gray = cv2.cvtColor(depth_rescaled,
+                                              cv2.COLOR_GRAY2RGB)
+    module_output_3chn = cv2.applyColorMap(depth_rescaled_3chn,
+                                           cv2.COLORMAP_RAINBOW)
     module_output_3chn = cv2.resize(module_output_3chn,
                                (origin_width, origin_height),
                                interpolation=cv2.INTER_CUBIC)
@@ -71,7 +73,7 @@ def preprocessImage(rgb_img, resize_shape=[256,256]):
 
 
 def pltPredOnImg(module, image, signature='serving_default',
-                 save_path=None, plot_img=True):
+                 save_path=None, plot_img=False):
     """
     Function to infer a module on an image
     Display overlap original image + segmentation map
@@ -79,7 +81,9 @@ def pltPredOnImg(module, image, signature='serving_default',
     Args:
         - module from TensorFlow Hub
         - (str) image path
-        - (str) path to save image result
+        - (str) signature: signature to get the module result
+        - (str) save_path: path to save result overlap
+        - (bool) plot_img: boolean for showing result
     """
     fig = plt.figure(figsize=(8, 8))
 
@@ -95,3 +99,40 @@ def pltPredOnImg(module, image, signature='serving_default',
         plt.savefig(save_path)
     plt.close()
     return overlap
+
+def pltPredOnVideo(video_path, module, out_gif, signature='serving_default',
+                   plot_img=False, fps=30, resize_fact=1, keep_every=1):
+    """
+    Function to infer a module on a video
+    Save result into a gif file
+
+    Args:
+        - (str) video_path: path to the video
+        - module from TensorFlow Hub
+        - (str) out_gif: path to save image result
+        - (str) signature: signature to get the module result
+        - (bool) plot_img: boolean for showing result
+        - (int) fps: output fps for the gif
+        - (int) resize_fact: divise output resolution
+        - (int) keep_every: keep frame if frame_idx%keep_every == 0
+    """
+    cap = cv2.VideoCapture(video_path)
+    number_of_frame = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    imgs = []
+    for i in tqdm(range(number_of_frame)):
+        if i%keep_every != 0 and keep_every!=1:
+            continue
+        return_value, image = cap.read()
+        rgb_img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        overlap = pltPredOnImg(module, rgb_img, plot_img=plot_img)
+        overlap = overlap.resize((overlap.size[0]//resize_fact,
+                                  overlap.size[1]//resize_fact))
+        imgs.append(overlap)
+    del(cap)
+
+    imgs[0].save(out_gif, format='GIF',
+                 append_images=imgs[1:],
+                 save_all=True, loop=0)
+
+    gif = imageio.mimread(out_gif, memtest=False)
+    imageio.mimsave(out_gif, gif, fps=fps)
