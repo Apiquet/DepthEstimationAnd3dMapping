@@ -48,18 +48,16 @@ def overlapImgWithSegMap(img, module_output):
 
     return overlap
 
-def preprocessImage(image_path: str, resize_shape=[256,256]):
+def preprocessImage(rgb_img, resize_shape=[256,256]):
     """
     Function to preprocess an image
-    Normalization, RGB format, resized to resize_shape
+    Normalization and resized to resize_shape
 
     Args:
         - (str) Path to the image
         - (numpy array) module_output : output of the model
         - (int) legend_size: factor to multiply legend sized calculated
     """
-    img = cv2.imread(image_path)
-    rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     normalized_img = rgb_img / 255.0
 
     img_resized = tf.image.resize(normalized_img, resize_shape,
@@ -72,8 +70,8 @@ def preprocessImage(image_path: str, resize_shape=[256,256]):
     return rgb_img, tensor
 
 
-def pltPredOnImg(module, image_path, signature='serving_default',
-                 save_path=None):
+def pltPredOnImg(module, image, signature='serving_default',
+                 save_path=None, plot_img=True):
     """
     Function to infer a module on an image
     Display overlap original image + segmentation map
@@ -85,11 +83,15 @@ def pltPredOnImg(module, image_path, signature='serving_default',
     """
     fig = plt.figure(figsize=(8, 8))
 
-    rgb_img, module_input = preprocessImage(image_path)
+    rgb_img, module_input = preprocessImage(image)
     module_output = module.signatures[signature](module_input)
     np_module_output = module_output['default'].numpy().squeeze()
     overlap = overlapImgWithSegMap(rgb_img, np_module_output)
-    plt.imshow(overlap)
+
+    if plot_img:
+        plt.show(overlap)
+
     if save_path is not None:
         plt.savefig(save_path)
-    plt.show()
+    plt.close()
+    return overlap
