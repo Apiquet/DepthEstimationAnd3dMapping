@@ -50,6 +50,8 @@ def preprocess_image(rgb_img, resize_shape):
         - (str) Path to the image
         - (numpy array) module_output : output of the model
         - (int) legend_size: factor to multiply legend sized calculated
+    Return:
+        - (tf.Tensor) normalized and resized image in tensor
     """
     normalized_img = rgb_img / 255.0
 
@@ -60,7 +62,7 @@ def preprocess_image(rgb_img, resize_shape):
     img_input = img_resized.numpy()
     reshape_img = img_input.reshape(1, 3, resize_shape[0], resize_shape[1])
     tensor = tf.convert_to_tensor(reshape_img, dtype=tf.float32)
-    return rgb_img, tensor
+    return tensor
 
 
 def plt_pred_on_img(module, image, module_input_shape,
@@ -72,18 +74,20 @@ def plt_pred_on_img(module, image, module_input_shape,
 
     Args:
         - module from TensorFlow Hub
-        - (str) image path
+        - (cv2 image) rgb image
         - (list) module_input_shape: expected shape for module
         - (str) signature: signature to get the module result
         - (str) save_path: path to save result overlap
         - (bool) plot_img: boolean for showing result
+    Return:
+        - (PIL image) overlap of rgb image with segmentation map
     """
     plt.figure(figsize=(8, 8))
 
-    rgb_img, module_input = preprocess_image(image, module_input_shape)
+    module_input = preprocess_image(image, module_input_shape)
     module_output = module.signatures[signature](module_input)
     np_module_output = module_output['default'].numpy().squeeze()
-    overlap = overlap_img_with_segmap(rgb_img, np_module_output)
+    overlap = overlap_img_with_segmap(image, np_module_output)
 
     if plot_img:
         plt.show(overlap)
