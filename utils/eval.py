@@ -33,8 +33,8 @@ def overlap_img_with_segmap(img, module_output):
     module_output_3chn = cv2.applyColorMap(depth_rescaled_3chn,
                                            cv2.COLORMAP_RAINBOW)
     module_output_3chn = cv2.resize(module_output_3chn,
-                               (origin_width, origin_height),
-                               interpolation=cv2.INTER_CUBIC)
+                                    (origin_width, origin_height),
+                                    interpolation=cv2.INTER_CUBIC)
     seg_pil = Image.fromarray(module_output_3chn.astype('uint8'), 'RGB')
 
     overlap = Image.blend(im_pil, seg_pil, alpha=0.6)
@@ -119,7 +119,7 @@ def plot_pred_on_video(video_path, module, module_input_shape,
     number_of_frame = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     imgs = []
     for i in tqdm(range(number_of_frame)):
-        if i%keep_every != 0 and keep_every!=1:
+        if i%keep_every != 0 and keep_every != 1:
             continue
         _, image = cap.read()
         rgb_img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
