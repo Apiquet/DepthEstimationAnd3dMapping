@@ -29,7 +29,8 @@ def overlap_img_with_segmap(img, module_output):
 
     depth_min = module_output.min()
     depth_max = module_output.max()
-    print(depth_max, depth_min)
+
+    # rescale depthmap between 0-255
     depth_rescaled = (255 * (module_output - depth_min) / (depth_max - depth_min)).astype("uint8")
     depth_rescaled_3chn = cv2.cvtColor(depth_rescaled,
                                        cv2.COLOR_GRAY2RGB)
@@ -72,7 +73,7 @@ def plt_pred_on_img(module, image, module_input_shape,
                     signature='serving_default',
                     save_path=None, plot_img=False):
     """
-    Function to infer a module on an image
+    Function to infer a tfhub module (from hub.load) on an image
     Display overlap original image + segmentation map
 
     Args:
@@ -104,7 +105,7 @@ def plot_pred_on_video(video_path, module, module_input_shape,
                        out_gif, signature='serving_default',
                        plot_img=False, fps=30, resize_fact=1, keep_every=1):
     """
-    Function to infer a module on a video
+    Function to infer a tfhub module (from hub.load) on a video
     Save result into a gif file
 
     Args:
