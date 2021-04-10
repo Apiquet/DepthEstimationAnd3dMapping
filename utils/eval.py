@@ -21,12 +21,15 @@ def overlap_img_with_segmap(img, module_output):
         - (cv2.image) Raw input image in RGB
         - (numpy array) module_output : output of the model
         - (int) legend_size: factor to multiply legend sized calculated
+    Return:
+        - (PIL image) overlap between img and module_output
     """
     origin_height, origin_width, _ = img.shape
     im_pil = Image.fromarray(img)
 
     depth_min = module_output.min()
     depth_max = module_output.max()
+    print(depth_max, depth_min)
     depth_rescaled = (255 * (module_output - depth_min) / (depth_max - depth_min)).astype("uint8")
     depth_rescaled_3chn = cv2.cvtColor(depth_rescaled,
                                        cv2.COLOR_GRAY2RGB)
@@ -47,7 +50,7 @@ def preprocess_image(rgb_img, resize_shape):
     Normalization and resized to resize_shape
 
     Args:
-        - (str) Path to the image
+        - (cv2 image) image in rgb format
         - (numpy array) module_output : output of the model
         - (int) legend_size: factor to multiply legend sized calculated
     Return:
