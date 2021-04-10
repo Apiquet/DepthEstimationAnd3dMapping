@@ -130,8 +130,8 @@ def plot_pred_on_video(video_path, module, module_input_shape,
         overlap = plt_pred_on_img(module, rgb_img, module_input_shape,
                                   plot_img=plot_img,
                                   signature=signature)
-        overlap = overlap.resize((overlap.size[0]//resize_fact,
-                                  overlap.size[1]//resize_fact))
+        overlap = overlap.resize((int(overlap.size[0]*resize_fact),
+                                  int(overlap.size[1]*resize_fact)))
         imgs.append(overlap)
 
     imgs[0].save(out_gif, format='GIF',
