@@ -11,6 +11,60 @@ from matplotlib import pyplot as plt
 from PIL import Image
 import tensorflow as tf
 from tqdm import tqdm
+import os
+import urllib.request
+
+
+def get_tflite_interpreter(tflite_model_url, path_to_save, verbose=False):
+    """
+    Function to load a tflite model from URL
+
+    Args:
+        - (str) tflite_model_url: URL of the model to download
+        - (str) path_to_save: path to save the model
+        - (bool) verbose: print model input and output details
+    Return:
+        - (tf.lite.Interpreter) tflite interpreter
+    """
+    if not os.path.isfile(path_to_save):
+        urllib.request.urlretrieve(tflite_model_url, path_to_save)
+
+    # Load TFLite model and allocate tensors.
+    interpreter = tf.lite.Interpreter(model_path=path_to_save)
+    interpreter.allocate_tensors()
+
+    if verbose:
+        # Get input and output tensors.
+        input_details = interpreter.get_input_details()
+        output_details = interpreter.get_output_details()
+
+    return interpreter
+
+
+def run_tflite_interpreter(rgb_img, interpreter):
+    """
+    Function to infer tflite interpreter
+
+    Args:
+        - (cv2 image) image in rgb format
+        - (tf.lite.Interpreter) tflite interpreter
+    Return:
+        - (tf.Tensor) output tensor format (width, height, channel)
+    """
+    # preprocess input image
+    input_data = preprocess_image(rgb_img, [256, 256])
+
+    # reshape data according to input_details
+    input_data = tf.transpose(input_data, [0, 2, 3, 1])
+
+    # Get result
+    interpreter.set_tensor(interpreter.get_input_details()[0]['index'],
+                           input_data)
+    interpreter.invoke()
+    output_data = tf.squeeze(interpreter.get_tensor(
+        interpreter.get_output_details()[0]['index']), axis=0)
+
+    return output_data
 
 
 def overlap_img_with_segmap(img, module_output):
