@@ -49,7 +49,7 @@ def run_tflite_interpreter(rgb_img, interpreter):
         - (cv2 image) image in rgb format
         - (tf.lite.Interpreter) tflite interpreter
     Return:
-        - (tf.Tensor) output tensor format (width, height, channel)
+        - (np.array) interpreter output (width, height, channel)
     """
     # preprocess input image
     input_data = preprocess_image(rgb_img, [256, 256])
@@ -64,7 +64,7 @@ def run_tflite_interpreter(rgb_img, interpreter):
     output_data = tf.squeeze(interpreter.get_tensor(
         interpreter.get_output_details()[0]['index']), axis=0)
 
-    return output_data
+    return output_data.numpy()
 
 
 def overlap_img_with_segmap(img, module_output):
