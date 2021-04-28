@@ -122,7 +122,7 @@ def get_3d_points_from_depthmap(points_in_ned, depth_values,
     Return:
         - (np.array) rotation matrix for a rotation around the x axis
     """
-    for x in tqdm(range(IMAGE_WIDTH)):
+    for x in range(IMAGE_WIDTH):
         for y in range(IMAGE_HEIGHT):
 
             # keep 0.1% of the points
@@ -185,7 +185,6 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
 
         # plot 3D projected points in  simulation referential (-z, y, x)
         points_in_ned = points_in_ned.reshape([-1, 3])
-        print(points_in_ned.shape)
         ax.scatter(-points_in_ned[:, 2], points_in_ned[:, 1], points_in_ned[:, 0], c=colormap, s=5)
 
     # plot origin as blue sphere
