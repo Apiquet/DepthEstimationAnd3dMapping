@@ -39,6 +39,7 @@ Y_FOCAL = IMAGE_HEIGHT / (2*math.tan(V_FOV_RAD/2))
 X_CENTER_COORDINATE = (0.5*IMAGE_WIDTH)
 Y_CENTER_COORDINATE = (0.5*IMAGE_HEIGHT)
 
+
 def init_camera_params(image_width, image_height, depth_width, depth_height,
                        h_fov_degrees, v_fov_degrees=None):
     """
@@ -90,6 +91,7 @@ def get_cmap(values, cmap_name='rainbow'):
     depth_values_normalized = values/max(values)
     return cmap(depth_values_normalized)
 
+
 def get_rotation_matrix(orientation):
     """
     Calculate the rotation matrix for a rotation around the x axis of n radians
@@ -137,7 +139,8 @@ def get_3d_points_from_depthmap(points_in_ned, depth_values,
             # get 3d vector
             x_point = depth_value * (x - X_CENTER_COORDINATE) / X_FOCAL
             y_point = depth_value * (y - Y_CENTER_COORDINATE) / Y_FOCAL
-            point_3d_before_rotation = np.array([x_point, y_point, depth_value])
+            point_3d_before_rotation = np.array([x_point, y_point,
+                                                 depth_value])
 
             # projection in function of the orientation
             point_3d_after_rotation = np.matmul(
@@ -146,6 +149,7 @@ def get_3d_points_from_depthmap(points_in_ned, depth_values,
             points_in_ned = np.append(points_in_ned, point_3d_after_rotation)
             depth_values.append(depth_value)
     return points_in_ned, depth_values
+
 
 def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
              interpreter, min_projection_value, max_projection_value,
@@ -185,7 +189,8 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
 
         # plot 3D projected points in  simulation referential (-z, y, x)
         points_in_ned = points_in_ned.reshape([-1, 3])
-        ax.scatter(-points_in_ned[:, 2], points_in_ned[:, 1], points_in_ned[:, 0], c=colormap, s=5)
+        ax.scatter(-points_in_ned[:, 2], points_in_ned[:, 1],
+                   points_in_ned[:, 0], c=colormap, s=5)
 
     # plot origin as blue sphere
     ax.scatter(0, 0, s=100, c='b')
@@ -211,7 +216,6 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
     ax.set_xlim(-max_projection_value*0.7, max_projection_value*0.7)
     ax.set_ylim(-max_projection_value*0.7, max_projection_value*0.7)
     ax.set_zlim(-max_projection_value*0.7, max_projection_value*0.7)
-
 
     # plot arrow for robot orientation in simulation referential (-z, y, x)
     ax.quiver(0, 0, 0, -z_pos, y_pos, x_pos,
