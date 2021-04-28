@@ -85,7 +85,8 @@ def overlap_img_with_segmap(img, module_output):
     depth_max = module_output.max()
 
     # rescale depthmap between 0-255
-    depth_rescaled = (255 * (module_output - depth_min) / (depth_max - depth_min)).astype("uint8")
+    depth_rescaled = (255 * (module_output - depth_min) /
+                      (depth_max - depth_min)).astype("uint8")
     depth_rescaled_3chn = cv2.cvtColor(depth_rescaled,
                                        cv2.COLOR_GRAY2RGB)
     module_output_3chn = cv2.applyColorMap(depth_rescaled_3chn,
@@ -98,6 +99,7 @@ def overlap_img_with_segmap(img, module_output):
     overlap = Image.blend(im_pil, seg_pil, alpha=0.6)
 
     return overlap
+
 
 def preprocess_image(rgb_img, resize_shape):
     """
@@ -155,6 +157,7 @@ def plt_pred_on_img(module, image, module_input_shape,
     plt.close()
     return overlap
 
+
 def plot_pred_on_video(video_path, module, module_input_shape,
                        out_gif, signature='serving_default',
                        plot_img=False, fps=30, resize_fact=1, keep_every=1):
@@ -177,7 +180,7 @@ def plot_pred_on_video(video_path, module, module_input_shape,
     number_of_frame = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     imgs = []
     for i in tqdm(range(number_of_frame)):
-        if i%keep_every != 0 and keep_every != 1:
+        if i % keep_every != 0 and keep_every != 1:
             continue
         _, image = cap.read()
         rgb_img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
