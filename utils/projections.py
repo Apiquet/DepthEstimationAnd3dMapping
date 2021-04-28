@@ -17,6 +17,8 @@ from matplotlib import cm
 import random
 import numpy as np
 
+from . import depth_manager
+
 
 IMAGE_WIDTH = 1280
 IMAGE_HEIGHT = 720
@@ -112,8 +114,8 @@ def get_3d_points_from_depthmap(points_in_ned, depth_values,
     Uses global variable x_orientation
 
     Args:
-        - (np.array) points_in_ned
-        - (list) depth_values
+        - (np.array) points_in_ned array to add new 3D points
+        - (list) depth_values list to add the depth value of each point
         - (cv2 image) depth_map format (width, height, 1)
         - (float) x orientation of the robot in degrees
         - (int) pourcentage_to_keep: pourcentage of depth points to project
@@ -143,4 +145,79 @@ def get_3d_points_from_depthmap(points_in_ned, depth_values,
                 point_3d_before_rotation)
             points_in_ned = np.append(points_in_ned, point_3d_after_rotation)
             depth_values.append(depth_value)
+    return points_in_ned, depth_values
+
+def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
+             interpreter, min_projection_value, max_projection_value,
+             project_depth):
+    """
+    Project depth values into 3D point according to the robot orientation
+    Uses global variable x_orientation
+
+    Args:
+        - (matplotlib.figure) fig to plot environment
+        - (float) x_orientation of the robot
+        - (np.array) points_in_ned to display in the 3D env
+        - (list) depth_values to calculate cmap and boundaries
+        - (cv2 image) depth_map format (width, height, 1)
+        - (tf.lite.Interpreter) tflite interpreter
+        - (float) min_projection_value min depth value
+        - (float) max_projection_value max depth value
+        - (boolean) project_depth enables depth calculation and projection
+    """
+    plt.gcf().clear()
+
+    ax = fig.add_subplot(111, projection='3d')
+
+    if project_depth:
+        # get 3d points in real referential
+        depth_map = depth_manager.run_tflite_interpreter(rgb_img, interpreter)
+        points_in_ned, depth_values = \
+            get_3d_points_from_depthmap(points_in_ned, depth_values,
+                                        depth_map, x_orientation,
+                                        pourcentage_to_keep=1)
+
+        # get colormap
+        min_projection_value = min(depth_values)
+        max_projection_value = max(depth_values)
+        depth_values_normalized = depth_values/max_projection_value
+        colormap = get_cmap(depth_values_normalized)
+
+        # plot 3D projected points in  simulation referential (-z, y, x)
+        points_in_ned = points_in_ned.reshape([-1, 3])
+        print(points_in_ned.shape)
+        ax.scatter(-points_in_ned[:, 2], points_in_ned[:, 1], points_in_ned[:, 0], c=colormap, s=5)
+
+    # plot origin as blue sphere
+    ax.scatter(0, 0, s=100, c='b')
+
+    # plot x, y, z referential with arrows
+    ax.quiver(0, 0, 0, 1, 0, 0,
+              length=min_projection_value/2, normalize=True, color='r')
+    ax.text(min_projection_value/2, 0, 0, "x", color='r')
+    ax.quiver(0, 0, 0, 0, 1, 0,
+              length=min_projection_value/2, normalize=True, color='g')
+    ax.text(0, min_projection_value/2, 0, "y", color='g')
+    ax.quiver(0, 0, 0, 0, 0, 1,
+              length=min_projection_value/2, normalize=True, color='b')
+    ax.text(0, 0, min_projection_value/2, "z", color='b')
+
+    # get robot orientation in real referential
+    x_orientation_rad = math.radians(x_orientation)
+    x_pos = 0
+    y_pos = -math.sin(x_orientation_rad)
+    z_pos = math.cos(x_orientation_rad)
+
+    ax.view_init(elev=30, azim=10)
+    ax.set_xlim(-max_projection_value*0.7, max_projection_value*0.7)
+    ax.set_ylim(-max_projection_value*0.7, max_projection_value*0.7)
+    ax.set_zlim(-max_projection_value*0.7, max_projection_value*0.7)
+
+
+    # plot arrow for robot orientation in simulation referential (-z, y, x)
+    ax.quiver(0, 0, 0, -z_pos, y_pos, x_pos,
+              length=min_projection_value*0.7, normalize=True, color='black')
+    plt.show()
+    plt.pause(0.1)
+
     return points_in_ned, depth_values
