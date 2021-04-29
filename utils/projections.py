@@ -172,7 +172,7 @@ def get_3d_pos_from_x_orientation(x_orientation):
 def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
              interpreter, project_depth, orientations_done, orientations_todo,
              min_projection_value=1, max_projection_value=2,
-             pourcentage_to_project=1):
+             pourcentage_to_project=1, offset_ok=5):
     """
     Project depth values into 3D point according to the robot orientation
     Uses global variable x_orientation
@@ -195,12 +195,16 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
     ax = fig.add_subplot(111, projection='3d')
 
     if project_depth:
-        # get 3d points in real referential
-        depth_map = depth_manager.run_tflite_interpreter(rgb_img, interpreter)
-        points_in_ned, depth_values = \
-            get_3d_points_from_depthmap(points_in_ned, depth_values,
-                                        depth_map, x_orientation,
-                                        pourcentage_to_project)
+        for i, orientation in enumerate(orientations_todo):
+            if orientation - offset_ok <= x_orientation <= orientation + offset_ok:
+                # get 3d points in real referential
+                depth_map = depth_manager.run_tflite_interpreter(rgb_img, interpreter)
+                points_in_ned, depth_values = \
+                    get_3d_points_from_depthmap(points_in_ned, depth_values,
+                                                depth_map, x_orientation,
+                                                pourcentage_to_project)
+                orientations_done.append(orientation)
+                del orientations_todo[i]
         
     if len(points_in_ned) > 0:
         # get colormap
@@ -229,20 +233,22 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
     ax.text(0, 0, min_projection_value/2, "z", color='b')
 
     # orientations to do
-    for orientation in orientations_todo[1:]:
+    for orientation in orientations_todo:
         x_pos, y_pos, z_pos = get_3d_pos_from_x_orientation(orientation)
         ax.quiver(0, 0, 0, -z_pos, y_pos, x_pos,
               length=min_projection_value, normalize=True, color='r')
         ax.text(-z_pos*min_projection_value, y_pos*min_projection_value,
-                x_pos*min_projection_value, str(orientation)+'°', color='r')
+                x_pos*min_projection_value, str(orientation)+'°', color='r',
+                size=15)
 
     # orientations done
-    for orientation in orientations_todo[:1]:
+    for orientation in orientations_done:
         x_pos, y_pos, z_pos = get_3d_pos_from_x_orientation(orientation)
         ax.quiver(0, 0, 0, -z_pos, y_pos, x_pos,
               length=min_projection_value, normalize=True, color='g')
         ax.text(-z_pos*min_projection_value, y_pos*min_projection_value,
-                x_pos*min_projection_value, str(orientation)+'°', color='g')
+                x_pos*min_projection_value, str(orientation)+'°', color='g',
+                size=15)
 
     # get robot orientation in real referential
     x_pos, y_pos, z_pos = get_3d_pos_from_x_orientation(x_orientation)
@@ -256,7 +262,8 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
     ax.quiver(0, 0, 0, -z_pos, y_pos, x_pos,
               length=min_projection_value*0.7, normalize=True, color='black')
     ax.text(-z_pos*min_projection_value*0.7, y_pos*min_projection_value*0.7,
-            x_pos*min_projection_value*0.7, 'robot', color='black')
+            x_pos*min_projection_value*0.7, 'robot', color='black',
+            size=15)
     plt.show()
     plt.pause(0.1)
 
