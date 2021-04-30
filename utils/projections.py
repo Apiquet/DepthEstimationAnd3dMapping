@@ -171,8 +171,8 @@ def get_3d_pos_from_x_orientation(x_orientation):
 
 def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
              interpreter, project_depth, orientations_done, orientations_todo,
-             min_projection_value=1, max_projection_value=2,
-             pourcentage_to_project=1, offset_ok=5):
+             depth_map, min_projection_value=1, max_projection_value=2,
+             pourcentage_to_project=1, offset_ok=5, min_dist=None, max_dist=None):
     """
     Project depth values into 3D point according to the robot orientation
     Uses global variable x_orientation
@@ -199,12 +199,17 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
             if orientation - offset_ok <= x_orientation <= orientation + offset_ok:
                 # get 3d points in real referential
                 depth_map = depth_manager.run_tflite_interpreter(rgb_img, interpreter)
+                if min_dist is not None and max_dist is not None:
+                    depth_max = depth_map.max()
+                    total_range = max_dist - min_dist
+                    depth_map = depth_map / depth_max * total_range + min_dist
                 points_in_ned, depth_values = \
                     get_3d_points_from_depthmap(points_in_ned, depth_values,
                                                 depth_map, x_orientation,
                                                 pourcentage_to_project)
                 orientations_done.append(orientation)
                 del orientations_todo[i]
+                break
         
     if len(points_in_ned) > 0:
         # get colormap
@@ -224,13 +229,13 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
     # plot x, y, z referential with arrows
     ax.quiver(0, 0, 0, 1, 0, 0,
               length=min_projection_value/2, normalize=True, color='c')
-    ax.text(min_projection_value/2, 0, 0, "x", color='c')
+    ax.text(min_projection_value/2, 0, 0, "x", color='c', size=15)
     ax.quiver(0, 0, 0, 0, 1, 0,
               length=min_projection_value/2, normalize=True, color='m')
-    ax.text(0, min_projection_value/2, 0, "y", color='m')
+    ax.text(0, min_projection_value/2, 0, "y", color='m', size=15)
     ax.quiver(0, 0, 0, 0, 0, 1,
               length=min_projection_value/2, normalize=True, color='b')
-    ax.text(0, 0, min_projection_value/2, "z", color='b')
+    ax.text(0, 0, min_projection_value/2, "z", color='b', size=15)
 
     # orientations to do
     for orientation in orientations_todo:
@@ -264,7 +269,8 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
     ax.text(-z_pos*min_projection_value*0.7, y_pos*min_projection_value*0.7,
             x_pos*min_projection_value*0.7, 'robot', color='black',
             size=15)
+
     plt.show()
     plt.pause(0.1)
 
-    return points_in_ned, depth_values
+    return depth_map, points_in_ned, depth_values
