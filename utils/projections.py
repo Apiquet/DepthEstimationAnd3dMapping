@@ -185,12 +185,12 @@ def get_closest_corner(orientation, corners_distance):
     value = 0
 
     closest_orientation = min(corners_distance.keys(),
-                              key=lambda x:abs(x-orientation))
+                              key=lambda x: abs(x-orientation))
 
     if closest_orientation < orientation:
         isLeft = False
-    
-    return isLeft, corners_distance[closest_orientation][isLeft], closest_orientation
+
+    return isLeft, corners_distance[closest_orientation][isLeft]
 
 
 def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
@@ -248,7 +248,7 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
                     corners_distance[orientation] =\
                         [depth_map[0, 0], depth_map[0, -1]]
                 else:
-                    isLeft, corner_value, closest_orientation =\
+                    isLeft, corner_value =\
                         get_closest_corner(orientation, corners_distance)
                     depth_max = depth_map.max()
                     total_range = max_dist - min_dist
