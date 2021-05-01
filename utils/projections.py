@@ -171,8 +171,9 @@ def get_3d_pos_from_x_orientation(x_orientation):
 
 def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
              interpreter, project_depth, orientations_done, orientations_todo,
-             depth_map, min_projection_value=1, max_projection_value=2,
-             pourcentage_to_project=1, offset_ok=5, min_dist=None, max_dist=None):
+             depth_map, overlaps_img_depth, min_projection_value=1.,
+             max_projection_value=2., pourcentage_to_project=1, offset_ok=5.,
+             min_dist=None, max_dist=None):
     """
     Project depth values into 3D point according to the robot orientation
     Uses global variable x_orientation
@@ -182,13 +183,21 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
         - (float) x_orientation of the robot
         - (np.array) points_in_ned to display in the 3D env
         - (list) depth_values to calculate cmap and boundaries
-        - (cv2 image) depth_map format (width, height, 1)
+        - (cv2 image) image in rgb format
         - (tf.lite.Interpreter) tflite interpreter
         - (boolean) project_depth enables depth calculation and projection
         - (list) orientations_done list of orientations already projected
         - (list) orientations_todo list of orientations to project
+        - (cv2 image) depth_map format (width, height, 1)
+        - (dict of orientation: PIL image) overlap between img and depth_map
         - (float) min_projection_value min depth value
         - (float) max_projection_value max depth value
+        - (int) pourcentage_to_keep: pourcentage of depth points to project
+        - (float) offset to accept the current orientation of the robot to do
+            and angle in orientations_todo
+        - (float) min_dist to rescale the generated depth map
+        - (float) max_dist to rescale the generated depth map
+        If min/max_dist: depth=depth/depth.max*(max_dist-min_dist)+min_dist
     """
     plt.gcf().clear()
 
@@ -196,9 +205,13 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
 
     if project_depth:
         for i, orientation in enumerate(orientations_todo):
-            if orientation - offset_ok <= x_orientation <= orientation + offset_ok:
+            if orientation - offset_ok <= x_orientation\
+                    <= orientation + offset_ok:
                 # get 3d points in real referential
-                depth_map = depth_manager.run_tflite_interpreter(rgb_img, interpreter)
+                depth_map = depth_manager.run_tflite_interpreter(rgb_img,
+                                                                 interpreter)
+                overlaps_img_depth[orientation] = \
+                    depth_manager.overlap_img_with_segmap(rgb_img, depth_map)
                 if min_dist is not None and max_dist is not None:
                     depth_max = depth_map.max()
                     total_range = max_dist - min_dist

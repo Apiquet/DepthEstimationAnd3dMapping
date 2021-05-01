@@ -74,7 +74,6 @@ def overlap_img_with_segmap(img, module_output):
     Args:
         - (cv2.image) Raw input image in RGB
         - (numpy array) module_output : output of the model
-        - (int) legend_size: factor to multiply legend sized calculated
     Return:
         - (PIL image) overlap between img and module_output
     """
