@@ -66,7 +66,7 @@ def init_camera_params(image_width, image_height, depth_width, depth_height,
     if v_fov_degrees:
         V_FOV_RAD = math.radians(v_fov_degrees)
     else:
-        # v_fov wrong but cannot find the real value in camera's documentation
+        # if v_fov not known
         V_FOV_RAD = math.radians(IMAGE_HEIGHT/IMAGE_WIDTH*H_FOV_DEGREES)
 
     X_FOCAL = IMAGE_WIDTH / (2*math.tan(H_FOV_RAD/2))
@@ -94,7 +94,7 @@ def get_cmap(values, cmap_name='rainbow'):
 
 def get_rotation_matrix(orientation):
     """
-    Calculate the rotation matrix for a rotation around the x axis of n radians
+    Get the rotation matrix for a rotation around the x axis of n radians
 
     Args:
         - (float) orientation in radian
@@ -169,10 +169,35 @@ def get_3d_pos_from_x_orientation(x_orientation):
     return x_pos, y_pos, z_pos
 
 
+def get_closest_corner(orientation, corners_distance):
+    """
+    Function to call to know which corner to rescale for a given orientation
+    And the value to use
+
+    Args:
+        - (float) current orientation for a depth map to rescale
+        - (dict of tuples 2 values) format orientation: (top left, top right)
+    Return:
+        - (bool) isLeft true if left, false if right
+        - (float) value for the rescale
+    """
+    isLeft = True
+    value = 0
+
+    closest_orientation = min(corners_distance.keys(),
+                              key=lambda x:abs(x-orientation))
+
+    if closest_orientation < orientation:
+        isLeft = False
+    
+    return isLeft, corners_distance[closest_orientation][isLeft]
+
+
 def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
              interpreter, project_depth, orientations_done, orientations_todo,
-             depth_map, overlaps_img_depth, min_projection_value=1.,
-             max_projection_value=2., pourcentage_to_project=1, offset_ok=5.,
+             depth_map, overlaps_img_depth, corners_distance,
+             min_projection_value=1., max_projection_value=2.,
+             pourcentage_to_project=1, offset_ok=5.,
              min_dist=None, max_dist=None):
     """
     Project depth values into 3D point according to the robot orientation
@@ -190,6 +215,7 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
         - (list) orientations_todo list of orientations to project
         - (cv2 image) depth_map format (width, height, 1)
         - (dict of orientation: PIL image) overlap between img and depth_map
+        - (dict of tuples 2 values) format orientation: (top left, top right)
         - (float) min_projection_value min depth value
         - (float) max_projection_value max depth value
         - (int) pourcentage_to_keep: pourcentage of depth points to project
@@ -212,10 +238,21 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
                                                                  interpreter)
                 overlaps_img_depth[orientation] = \
                     depth_manager.overlap_img_with_segmap(rgb_img, depth_map)
+
                 if min_dist is not None and max_dist is not None:
                     depth_max = depth_map.max()
                     total_range = max_dist - min_dist
                     depth_map = depth_map / depth_max * total_range + min_dist
+                    corners_distance[orientation] =\
+                        [depth_map[0, 0], depth_map[0, -1]]
+                else:
+                    isLeft, corner_value =\
+                        get_closest_corner(orientation, corners_distance)
+                    depth_map = depth_map / depth_map[0, -int(not isLeft)]\
+                        * total_range + min_dist
+                    corners_distance[orientation] =\
+                        [depth_map[0, 0], depth_map[0, -1]]
+
                 points_in_ned, depth_values = \
                     get_3d_points_from_depthmap(points_in_ned, depth_values,
                                                 depth_map, x_orientation,
@@ -223,7 +260,7 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
                 orientations_done.append(orientation)
                 del orientations_todo[i]
                 break
-        
+
     if len(points_in_ned) > 0:
         # get colormap
         min_projection_value = min(depth_values)
@@ -254,7 +291,7 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
     for orientation in orientations_todo:
         x_pos, y_pos, z_pos = get_3d_pos_from_x_orientation(orientation)
         ax.quiver(0, 0, 0, -z_pos, y_pos, x_pos,
-              length=min_projection_value, normalize=True, color='r')
+                  length=min_projection_value, normalize=True, color='r')
         ax.text(-z_pos*min_projection_value, y_pos*min_projection_value,
                 x_pos*min_projection_value, str(orientation)+'°', color='r',
                 size=15)
@@ -263,7 +300,7 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
     for orientation in orientations_done:
         x_pos, y_pos, z_pos = get_3d_pos_from_x_orientation(orientation)
         ax.quiver(0, 0, 0, -z_pos, y_pos, x_pos,
-              length=min_projection_value, normalize=True, color='g')
+                  length=min_projection_value, normalize=True, color='g')
         ax.text(-z_pos*min_projection_value, y_pos*min_projection_value,
                 x_pos*min_projection_value, str(orientation)+'°', color='g',
                 size=15)
