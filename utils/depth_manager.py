@@ -12,6 +12,7 @@ from PIL import Image
 import tensorflow as tf
 from tqdm import tqdm
 import os
+import numpy as np
 import urllib.request
 
 
@@ -75,7 +76,7 @@ def overlap_img_with_segmap(img, module_output):
         - (cv2.image) Raw input image in RGB
         - (numpy array) module_output : output of the model
     Return:
-        - (PIL image) overlap between img and module_output
+        - (numpy array) overlap between img and module_output
     """
     origin_height, origin_width, _ = img.shape
     im_pil = Image.fromarray(img)
@@ -97,7 +98,7 @@ def overlap_img_with_segmap(img, module_output):
 
     overlap = Image.blend(im_pil, seg_pil, alpha=0.6)
 
-    return overlap
+    return np.array(overlap)
 
 
 def preprocess_image(rgb_img, resize_shape):
@@ -122,6 +123,48 @@ def preprocess_image(rgb_img, resize_shape):
     reshape_img = img_input.reshape(1, 3, resize_shape[0], resize_shape[1])
     tensor = tf.convert_to_tensor(reshape_img, dtype=tf.float32)
     return tensor
+
+
+def crop_depth_map(depth_map, margin_percentage):
+    """
+    Crop margins on input depth_map
+
+    Args:
+        - (numpy array) format [width, height, channel]
+        - (float) percentage [0: 100]
+    Return:
+        - (numpy array) format [width-2*margin, height-2*margin, channel]
+    """
+    width, height, _ = depth_map.shape
+    margin_from_0_to_1 = margin_percentage/100
+    
+    first_width_idx = int(width * margin_from_0_to_1)
+    first_height_idx = int(height * margin_from_0_to_1)
+    
+    last_width_idx = int(width * (1-margin_from_0_to_1))
+    last_height_idx = int(height * (1-margin_from_0_to_1))
+
+    return depth_map[first_width_idx:last_width_idx,
+                     first_height_idx:last_height_idx]
+
+
+def rescale_depth_map(depth_map, min_dist, max_dist):
+    """
+    Rescale depth map from min_dist to max_dist
+
+    Args:
+        - (numpy array) format [width, height, channel]
+        - (float) percentage [0: 100]
+    Return:
+        - (float) min_dist to rescale the generated depth map
+        - (float) max_dist to rescale the generated depth map
+            depth=depth/depth.max*(max_dist-min_dist)+min_dist
+    """
+    depth_max = depth_map.max()
+    total_range = max_dist - min_dist
+    rescaled_depth_map = depth_map / depth_max * total_range + min_dist
+
+    return rescaled_depth_map
 
 
 def plt_pred_on_img(module, image, module_input_shape,
