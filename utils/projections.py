@@ -186,6 +186,72 @@ def get_closest_corner(orientation, corners_distance):
     return isLeft, corners_distance[closest_orientation][isLeft]
 
 
+def plot_referential(ax, x_orientation, orientations_todo, orientations_done,
+                     min_projection_value, max_projection_value):
+    """
+    Function to plot:
+        - x, y, z arrows for the referential
+        - the robot arrow
+        - the arrows for todo orientations (red) and orientations done (green)
+
+    Args:
+        - (matplotlib ax3D) ax to plot arrows
+        - (float) orientation of the robot in 3D
+        - (list) orientations_done list of orientations already projected
+        - (list) orientations_todo list of orientations to project
+        - (float) min_projection_value min depth value
+        - (float) max_projection_value max depth value
+    Return:
+        - (matplotlib ax3D) ax with the four arrows
+    """
+    # plot origin as blue sphere
+    ax.scatter(0, 0, s=100, c='b')
+
+    # plot x, y, z referential with arrows
+    ax.quiver(0, 0, 0, 1, 0, 0,
+              length=min_projection_value/2, normalize=True, color='c')
+    ax.text(min_projection_value/2, 0, 0, "x", color='c', size=15)
+    ax.quiver(0, 0, 0, 0, 1, 0,
+              length=min_projection_value/2, normalize=True, color='m')
+    ax.text(0, min_projection_value/2, 0, "y", color='m', size=15)
+    ax.quiver(0, 0, 0, 0, 0, 1,
+              length=min_projection_value/2, normalize=True, color='b')
+    ax.text(0, 0, min_projection_value/2, "z", color='b', size=15)
+
+    # orientations to do
+    for orientation in orientations_todo:
+        x_pos, y_pos, z_pos = get_3d_pos_from_x_orientation(orientation)
+        ax.quiver(0, 0, 0, -z_pos, y_pos, x_pos,
+                  length=min_projection_value, normalize=True, color='r')
+        ax.text(-z_pos*min_projection_value, y_pos*min_projection_value,
+                x_pos*min_projection_value, str(orientation)+'°', color='r',
+                size=15)
+
+    # orientations done
+    for orientation in orientations_done:
+        x_pos, y_pos, z_pos = get_3d_pos_from_x_orientation(orientation)
+        ax.quiver(0, 0, 0, -z_pos, y_pos, x_pos,
+                  length=min_projection_value, normalize=True, color='g')
+        ax.text(-z_pos*min_projection_value, y_pos*min_projection_value,
+                x_pos*min_projection_value, str(orientation)+'°', color='g',
+                size=15)
+
+    # get robot orientation in real referential
+    x_pos, y_pos, z_pos = get_3d_pos_from_x_orientation(x_orientation)
+
+    ax.view_init(elev=30, azim=10)
+    ax.set_xlim(-max_projection_value*0.7, max_projection_value*0.7)
+    ax.set_ylim(-max_projection_value*0.7, max_projection_value*0.7)
+    ax.set_zlim(-max_projection_value*0.7, max_projection_value*0.7)
+
+    # plot arrow for robot orientation in simulation referential (-z, y, x)
+    ax.quiver(0, 0, 0, -z_pos, y_pos, x_pos,
+              length=min_projection_value*0.7, normalize=True, color='black')
+    ax.text(-z_pos*min_projection_value*0.7, y_pos*min_projection_value*0.7,
+            x_pos*min_projection_value*0.7, 'robot', color='black',
+            size=15)
+
+
 def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
              interpreter, project_depth, orientations_done, orientations_todo,
              depth_map, overlaps_img_depth, corners_distance,
@@ -223,6 +289,9 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
 
     ax = fig.add_subplot(121, projection='3d')
     ax2 = fig.add_subplot(122)
+
+    plot_referential(ax, x_orientation, orientations_todo, orientations_done,
+                     min_projection_value, max_projection_value)
 
     if project_depth:
         for i, orientation in enumerate(orientations_todo):
@@ -277,57 +346,10 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
         depth_values_normalized = depth_values/max_projection_value
         colormap = get_cmap(depth_values_normalized)
 
-        # plot 3D projected points in  simulation referential (-z, y, x)
+        # plot 3D projected points in simulation referential (-z, y, x)
         points_in_ned = points_in_ned.reshape([-1, 3])
         ax.scatter(-points_in_ned[:, 2], points_in_ned[:, 1],
                    points_in_ned[:, 0], c=colormap, s=5)
-
-    # plot origin as blue sphere
-    ax.scatter(0, 0, s=100, c='b')
-
-    # plot x, y, z referential with arrows
-    ax.quiver(0, 0, 0, 1, 0, 0,
-              length=min_projection_value/2, normalize=True, color='c')
-    ax.text(min_projection_value/2, 0, 0, "x", color='c', size=15)
-    ax.quiver(0, 0, 0, 0, 1, 0,
-              length=min_projection_value/2, normalize=True, color='m')
-    ax.text(0, min_projection_value/2, 0, "y", color='m', size=15)
-    ax.quiver(0, 0, 0, 0, 0, 1,
-              length=min_projection_value/2, normalize=True, color='b')
-    ax.text(0, 0, min_projection_value/2, "z", color='b', size=15)
-
-    # orientations to do
-    for orientation in orientations_todo:
-        x_pos, y_pos, z_pos = get_3d_pos_from_x_orientation(orientation)
-        ax.quiver(0, 0, 0, -z_pos, y_pos, x_pos,
-                  length=min_projection_value, normalize=True, color='r')
-        ax.text(-z_pos*min_projection_value, y_pos*min_projection_value,
-                x_pos*min_projection_value, str(orientation)+'°', color='r',
-                size=15)
-
-    # orientations done
-    for orientation in orientations_done:
-        x_pos, y_pos, z_pos = get_3d_pos_from_x_orientation(orientation)
-        ax.quiver(0, 0, 0, -z_pos, y_pos, x_pos,
-                  length=min_projection_value, normalize=True, color='g')
-        ax.text(-z_pos*min_projection_value, y_pos*min_projection_value,
-                x_pos*min_projection_value, str(orientation)+'°', color='g',
-                size=15)
-
-    # get robot orientation in real referential
-    x_pos, y_pos, z_pos = get_3d_pos_from_x_orientation(x_orientation)
-
-    ax.view_init(elev=30, azim=10)
-    ax.set_xlim(-max_projection_value*0.7, max_projection_value*0.7)
-    ax.set_ylim(-max_projection_value*0.7, max_projection_value*0.7)
-    ax.set_zlim(-max_projection_value*0.7, max_projection_value*0.7)
-
-    # plot arrow for robot orientation in simulation referential (-z, y, x)
-    ax.quiver(0, 0, 0, -z_pos, y_pos, x_pos,
-              length=min_projection_value*0.7, normalize=True, color='black')
-    ax.text(-z_pos*min_projection_value*0.7, y_pos*min_projection_value*0.7,
-            x_pos*min_projection_value*0.7, 'robot', color='black',
-            size=15)
 
     plt.show()
     plt.pause(0.2)
