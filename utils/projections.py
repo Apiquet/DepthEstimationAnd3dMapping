@@ -220,8 +220,6 @@ def plot_referential(ax, x_orientation, orientations_todo, orientations_done,
         - (list) orientations_todo list of orientations to project
         - (float) min_projection_value min depth value
         - (float) max_projection_value max depth value
-    Return:
-        - (matplotlib ax3D) ax with the four arrows
     """
     # plot origin as blue sphere
     ax.scatter(0, 0, s=100, c='b')
@@ -230,22 +228,6 @@ def plot_referential(ax, x_orientation, orientations_todo, orientations_done,
     plot_arrow_text(ax, 0, 0, 0, 1, 0, 0, max_projection_value/4, 'x', 'c', 15)
     plot_arrow_text(ax, 0, 0, 0, 0, 1, 0, max_projection_value/4, 'y', 'm', 15)
     plot_arrow_text(ax, 0, 0, 0, 0, 0, 1, max_projection_value/4, 'z', 'b', 15)
-
-    # orientations to do
-    for orientation in orientations_todo:
-        x_pos, y_pos, z_pos = get_3d_pos_from_x_orientation(orientation)
-        x_origin_offset = -max_projection_value/2
-        plot_arrow_text(ax, 0, 0, x_origin_offset, -z_pos, y_pos, x_pos,
-                        max_projection_value/3, str(orientation)+'°', 'r', 15,
-                        [0, 0, x_origin_offset])
-
-    # orientations done
-    for orientation in orientations_done:
-        x_pos, y_pos, z_pos = get_3d_pos_from_x_orientation(orientation)
-        x_origin_offset = -max_projection_value/2
-        plot_arrow_text(ax, 0, 0, x_origin_offset, -z_pos, y_pos, x_pos,
-                        max_projection_value/3, str(orientation)+'°', 'g', 15,
-                        [0, 0, x_origin_offset])
 
     # get robot orientation in real referential
     x_pos, y_pos, z_pos = get_3d_pos_from_x_orientation(x_orientation)
@@ -257,6 +239,47 @@ def plot_referential(ax, x_orientation, orientations_todo, orientations_done,
     ax.set_xlim(-max_projection_value*0.7, max_projection_value*0.7)
     ax.set_ylim(-max_projection_value*0.7, max_projection_value*0.7)
     ax.set_zlim(-max_projection_value*0.7, max_projection_value*0.7)
+
+
+def plot_2d_top_view_referential(ax, x_orientation, orientations_todo,
+                                 orientations_done,):
+    """
+    Function to plot:
+        - the robot arrow in black
+        - the arrows for todo orientations (red) and orientations done (green)
+
+    Args:
+        - (matplotlib ax3D) ax to plot arrows
+        - (float) orientation of the robot in 3D
+        - (list) orientations_done list of orientations already projected
+        - (list) orientations_todo list of orientations to project
+    """
+    # plot origin as blue sphere
+    ax.scatter(0, 0, s=100, c='b')
+
+    # orientations to do
+    for orientation in orientations_todo:
+        x_pos, y_pos, z_pos = get_3d_pos_from_x_orientation(orientation)
+        # simulation referential (-z, y, x)
+        ax.arrow(0, 0, -z_pos, y_pos, head_width=0.05, head_length=0.1, color='r')
+        ax.text(-z_pos, y_pos, str(orientation)+'°', color='r', size=15)
+
+    # orientations to do
+    for orientation in orientations_done:
+        x_pos, y_pos, z_pos = get_3d_pos_from_x_orientation(orientation)
+        # simulation referential (-z, y, x)
+        ax.arrow(0, 0, -z_pos, y_pos, head_width=0.05, head_length=0.1, color='g')
+        ax.text(-z_pos, y_pos, str(orientation)+'°', color='g', size=15)
+
+    # get robot orientation in real referential
+    x_pos, y_pos, z_pos = get_3d_pos_from_x_orientation(x_orientation)
+
+    # plot arrow for robot orientation in simulation referential (-z, y, x)
+    ax.arrow(0, 0, -z_pos, y_pos, head_width=0.05, head_length=0.1, color='black')
+    ax.text(-z_pos, y_pos, str(orientation)+'°', color='black', size=15)
+
+    ax.set_xlim(-3, 3)
+    ax.set_ylim(-3, 3)
 
 
 def plot_3d_points(ax, points_in_ned, depth_values,
@@ -315,7 +338,8 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
     plt.gcf().clear()
 
     ax = fig.add_subplot(121, projection='3d')
-    ax2 = fig.add_subplot(122)
+    ax2 = fig.add_subplot(222)
+    ax3 = fig.add_subplot(224)
 
     if len(points_in_ned) > 0:
         min_projection_value = min(depth_values)
@@ -325,6 +349,9 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
 
     plot_referential(ax, x_orientation, orientations_todo, orientations_done,
                      min_projection_value, max_projection_value)
+
+    plot_2d_top_view_referential(ax3, x_orientation,
+                                 orientations_todo, orientations_done)
 
     if project_depth:
         for i, orientation in enumerate(orientations_todo):
