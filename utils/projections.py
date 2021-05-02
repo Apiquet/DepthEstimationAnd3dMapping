@@ -14,19 +14,14 @@ import tensorflow as tf
 from tqdm import tqdm
 import os
 from matplotlib import cm
-import random
 import numpy as np
+import random
 
 from . import depth_manager
 
 
 IMAGE_WIDTH = 1280
 IMAGE_HEIGHT = 720
-DEPTH_WIDTH = 256
-DEPTH_HEIGHT = 256
-
-x_depth_rescale_factor = DEPTH_WIDTH / IMAGE_WIDTH
-y_depth_rescale_factor = DEPTH_HEIGHT / IMAGE_HEIGHT
 
 H_FOV_DEGREES = 60
 H_FOV_RAD = math.radians(H_FOV_DEGREES)
@@ -40,26 +35,19 @@ X_CENTER_COORDINATE = (0.5*IMAGE_WIDTH)
 Y_CENTER_COORDINATE = (0.5*IMAGE_HEIGHT)
 
 
-def init_camera_params(image_width, image_height, depth_width, depth_height,
-                       h_fov_degrees, v_fov_degrees=None):
+def init_camera_params(image_width, image_height, h_fov_degrees,
+                       v_fov_degrees=None):
     """
     Function to initialize camera specs
 
     Args:
         - (int) image width
         - (int) image height
-        - (int) depth width
-        - (int) depth height
         - (float) horizontal fov in degrees
         - (float) vertical fov in degrees
     """
     IMAGE_WIDTH = image_width
     IMAGE_HEIGHT = image_height
-    DEPTH_WIDTH = depth_width
-    DEPTH_HEIGHT = depth_height
-
-    x_depth_rescale_factor = DEPTH_WIDTH / IMAGE_WIDTH
-    y_depth_rescale_factor = DEPTH_HEIGHT / IMAGE_HEIGHT
 
     H_FOV_DEGREES = h_fov_degrees
     H_FOV_RAD = math.radians(H_FOV_DEGREES)
@@ -124,6 +112,11 @@ def get_3d_points_from_depthmap(points_in_ned, depth_values,
     Return:
         - (np.array) rotation matrix for a rotation around the x axis
     """
+    depth_width, depth_height, _ = depth_map.shape
+
+    x_depth_rescale_factor = depth_width / IMAGE_WIDTH
+    y_depth_rescale_factor = depth_height / IMAGE_HEIGHT
+
     for x in range(IMAGE_WIDTH):
         for y in range(IMAGE_HEIGHT):
 
@@ -198,7 +191,7 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
              depth_map, overlaps_img_depth, corners_distance,
              min_projection_value=1., max_projection_value=2.,
              pourcentage_to_project=1, offset_ok=5.,
-             min_dist=None, max_dist=None):
+             min_dist=None, max_dist=None, percentage_margin_on_depth=0):
     """
     Project depth values into 3D point according to the robot orientation
     Uses global variable x_orientation
@@ -224,10 +217,12 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
         - (float) min_dist to rescale the generated depth map
         - (float) max_dist to rescale the generated depth map
         If min/max_dist: depth=depth/depth.max*(max_dist-min_dist)+min_dist
+        - (float) margin percentage to remove from the depth [0: 100]
     """
     plt.gcf().clear()
 
-    ax = fig.add_subplot(111, projection='3d')
+    ax = fig.add_subplot(121, projection='3d')
+    ax2 = fig.add_subplot(122)
 
     if project_depth:
         for i, orientation in enumerate(orientations_todo):
@@ -236,23 +231,29 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
                 # get 3d points in real referential
                 depth_map = depth_manager.run_tflite_interpreter(rgb_img,
                                                                  interpreter)
-                overlaps_img_depth[orientation] = \
-                    depth_manager.overlap_img_with_segmap(rgb_img, depth_map)
+                overlap = depth_manager.overlap_img_with_segmap(rgb_img,
+                                                                depth_map)
+                overlaps_img_depth[orientation] = overlap
+
+                ax2.imshow(overlap)
+                plt.show()
+                plt.pause(0.2)
+
+                depth_map = depth_manager.crop_depth_map(
+                    depth_map, percentage_margin_on_depth)
+
                 min_dist = float(input("Min distance: "))
                 max_dist = float(input("Max distance: "))
 
+                depth_map = depth_manager.rescale_depth_map(
+                    depth_map, min_dist, max_dist)
+
                 if len(orientations_done) == 0:
-                    depth_max = depth_map.max()
-                    total_range = max_dist - min_dist
-                    depth_map = depth_map / depth_max * total_range + min_dist
                     corners_distance[orientation] =\
-                        [depth_map[0, 0], depth_map[0, -1]]
+                        [depth_map[0, 0, 0], depth_map[0, -1, 0]]
                 else:
                     isLeft, corner_value =\
                         get_closest_corner(orientation, corners_distance)
-                    depth_max = depth_map.max()
-                    total_range = max_dist - min_dist
-                    depth_map = depth_map / depth_max * total_range + min_dist
                     depth_map = depth_map / depth_map[0, -int(not isLeft)]\
                         * corner_value
                     corners_distance[orientation] =\
@@ -265,6 +266,9 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
                 orientations_done.append(orientation)
                 del orientations_todo[i]
                 break
+    
+    
+    ax2.imshow(rgb_img)
 
     if len(points_in_ned) > 0:
         # get colormap
@@ -326,6 +330,6 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
             size=15)
 
     plt.show()
-    plt.pause(0.1)
+    plt.pause(0.2)
 
     return depth_map, points_in_ned, depth_values
