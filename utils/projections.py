@@ -98,7 +98,7 @@ def get_rotation_matrix(orientation):
 
 def get_3d_points_from_depthmap(points_in_ned, depth_values,
                                 depth_map, x_orientation_degrees,
-                                pourcentage_to_keep=1):
+                                per_mil_to_keep=1):
     """
     Project depth values into 3D point according to the robot orientation
     Uses global variable x_orientation
@@ -108,7 +108,7 @@ def get_3d_points_from_depthmap(points_in_ned, depth_values,
         - (list) depth_values list to add the depth value of each point
         - (cv2 image) depth_map format (width, height, 1)
         - (float) x orientation of the robot in degrees
-        - (int) pourcentage_to_keep: pourcentage of depth points to project
+        - (int) per_mil_to_keep: per-mil of depth points to project
     Return:
         - (np.array) rotation matrix for a rotation around the x axis
     """
@@ -120,8 +120,8 @@ def get_3d_points_from_depthmap(points_in_ned, depth_values,
     for x in range(IMAGE_WIDTH):
         for y in range(IMAGE_HEIGHT):
 
-            # keep 0.1% of the points
-            if random.randint(0, 999) >= pourcentage_to_keep:
+            # keep n per-mil points
+            if random.randint(0, 999) >= per_mil_to_keep:
                 continue
 
             # get depth value
@@ -186,6 +186,25 @@ def get_closest_corner(orientation, corners_distance):
     return isLeft, corners_distance[closest_orientation][isLeft]
 
 
+def plot_arrow_text(ax, x0_1, x0_2, x0_3, x1_1, x1_2, x1_3, dist, txt, c, s,
+                    txt_offset=[0, 0, 0]):
+    """
+    Function to call to know which corner to rescale for a given orientation
+    And the value to use
+
+    Args:
+        - (float) current orientation for a depth map to rescale
+        - (dict of tuples 2 values) format orientation: (top left, top right)
+    Return:
+        - (bool) isLeft true if left, false if right
+        - (float) value for the rescale
+    """
+    ax.quiver(x0_1, x0_2, x0_3, x1_1, x1_2, x1_3,
+              length=dist, normalize=True, color=c)
+    ax.text(x1_1*dist+txt_offset[0], x1_2*dist+txt_offset[1],
+            x1_3*dist+txt_offset[2], txt, color=c, size=s)
+
+
 def plot_referential(ax, x_orientation, orientations_todo, orientations_done,
                      min_projection_value, max_projection_value):
     """
@@ -208,56 +227,67 @@ def plot_referential(ax, x_orientation, orientations_todo, orientations_done,
     ax.scatter(0, 0, s=100, c='b')
 
     # plot x, y, z referential with arrows
-    ax.quiver(0, 0, 0, 1, 0, 0,
-              length=min_projection_value/2, normalize=True, color='c')
-    ax.text(min_projection_value/2, 0, 0, "x", color='c', size=15)
-    ax.quiver(0, 0, 0, 0, 1, 0,
-              length=min_projection_value/2, normalize=True, color='m')
-    ax.text(0, min_projection_value/2, 0, "y", color='m', size=15)
-    ax.quiver(0, 0, 0, 0, 0, 1,
-              length=min_projection_value/2, normalize=True, color='b')
-    ax.text(0, 0, min_projection_value/2, "z", color='b', size=15)
+    plot_arrow_text(ax, 0, 0, 0, 1, 0, 0, max_projection_value/4, 'x', 'c', 15)
+    plot_arrow_text(ax, 0, 0, 0, 0, 1, 0, max_projection_value/4, 'y', 'm', 15)
+    plot_arrow_text(ax, 0, 0, 0, 0, 0, 1, max_projection_value/4, 'z', 'b', 15)
 
     # orientations to do
     for orientation in orientations_todo:
         x_pos, y_pos, z_pos = get_3d_pos_from_x_orientation(orientation)
-        ax.quiver(0, 0, 0, -z_pos, y_pos, x_pos,
-                  length=min_projection_value, normalize=True, color='r')
-        ax.text(-z_pos*min_projection_value, y_pos*min_projection_value,
-                x_pos*min_projection_value, str(orientation)+'°', color='r',
-                size=15)
+        x_origin_offset = -max_projection_value/2
+        plot_arrow_text(ax, 0, 0, x_origin_offset, -z_pos, y_pos, x_pos,
+                        max_projection_value/3, str(orientation)+'°', 'r', 15,
+                        [0, 0, x_origin_offset])
 
     # orientations done
     for orientation in orientations_done:
         x_pos, y_pos, z_pos = get_3d_pos_from_x_orientation(orientation)
-        ax.quiver(0, 0, 0, -z_pos, y_pos, x_pos,
-                  length=min_projection_value, normalize=True, color='g')
-        ax.text(-z_pos*min_projection_value, y_pos*min_projection_value,
-                x_pos*min_projection_value, str(orientation)+'°', color='g',
-                size=15)
+        x_origin_offset = -max_projection_value/2
+        plot_arrow_text(ax, 0, 0, x_origin_offset, -z_pos, y_pos, x_pos,
+                        max_projection_value/3, str(orientation)+'°', 'g', 15,
+                        [0, 0, x_origin_offset])
 
     # get robot orientation in real referential
     x_pos, y_pos, z_pos = get_3d_pos_from_x_orientation(x_orientation)
 
-    ax.view_init(elev=30, azim=10)
+    # plot arrow for robot orientation in simulation referential (-z, y, x)
+    plot_arrow_text(ax, 0, 0, 0, -z_pos, y_pos, x_pos,
+                    max_projection_value/3, 'robot', 'black', 15)
+
     ax.set_xlim(-max_projection_value*0.7, max_projection_value*0.7)
     ax.set_ylim(-max_projection_value*0.7, max_projection_value*0.7)
     ax.set_zlim(-max_projection_value*0.7, max_projection_value*0.7)
 
-    # plot arrow for robot orientation in simulation referential (-z, y, x)
-    ax.quiver(0, 0, 0, -z_pos, y_pos, x_pos,
-              length=min_projection_value*0.7, normalize=True, color='black')
-    ax.text(-z_pos*min_projection_value*0.7, y_pos*min_projection_value*0.7,
-            x_pos*min_projection_value*0.7, 'robot', color='black',
-            size=15)
+
+def plot_3d_points(ax, points_in_ned, depth_values,
+                   max_projection_value):
+    """
+    Function to plot 3d points in environment with a colormap from get_cmap()
+
+    Args:
+        - (np.array) points_in_ned to display in the 3D env
+        - (list) depth_values to calculate cmap and boundaries
+        - (float) max_projection_value max depth values
+    Return:
+        - (bool) isLeft true if left, false if right
+        - (float) value for the rescale
+    """
+    # get colormap
+    depth_values_normalized = depth_values/max_projection_value
+    colormap = get_cmap(depth_values_normalized)
+
+    # plot 3D projected points in simulation referential (-z, y, x)
+    points_in_ned = points_in_ned.reshape([-1, 3])
+    ax.scatter(-points_in_ned[:, 2], points_in_ned[:, 1],
+               points_in_ned[:, 0], c=colormap, s=5)
 
 
 def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
              interpreter, project_depth, orientations_done, orientations_todo,
              depth_map, overlaps_img_depth, corners_distance,
              min_projection_value=1., max_projection_value=2.,
-             pourcentage_to_project=1, offset_ok=5.,
-             min_dist=None, max_dist=None, percentage_margin_on_depth=0):
+             per_mil_to_keep=1, offset_ok=2.5,
+             percentage_margin_on_depth=0):
     """
     Project depth values into 3D point according to the robot orientation
     Uses global variable x_orientation
@@ -277,18 +307,21 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
         - (dict of tuples 2 values) format orientation: (top left, top right)
         - (float) min_projection_value min depth value
         - (float) max_projection_value max depth value
-        - (int) pourcentage_to_keep: pourcentage of depth points to project
+        - (int) per_mil_to_keep: per-mil of depth points to project
         - (float) offset to accept the current orientation of the robot to do
             and angle in orientations_todo
-        - (float) min_dist to rescale the generated depth map
-        - (float) max_dist to rescale the generated depth map
-        If min/max_dist: depth=depth/depth.max*(max_dist-min_dist)+min_dist
         - (float) margin percentage to remove from the depth [0: 100]
     """
     plt.gcf().clear()
 
     ax = fig.add_subplot(121, projection='3d')
     ax2 = fig.add_subplot(122)
+
+    if len(points_in_ned) > 0:
+        min_projection_value = min(depth_values)
+        max_projection_value = max(depth_values)
+        plot_3d_points(ax, points_in_ned, depth_values,
+                       max_projection_value)
 
     plot_referential(ax, x_orientation, orientations_todo, orientations_done,
                      min_projection_value, max_projection_value)
@@ -331,25 +364,12 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
                 points_in_ned, depth_values = \
                     get_3d_points_from_depthmap(points_in_ned, depth_values,
                                                 depth_map, x_orientation,
-                                                pourcentage_to_project)
+                                                per_mil_to_keep)
                 orientations_done.append(orientation)
                 del orientations_todo[i]
                 break
-    
-    
+
     ax2.imshow(rgb_img)
-
-    if len(points_in_ned) > 0:
-        # get colormap
-        min_projection_value = min(depth_values)
-        max_projection_value = max(depth_values)
-        depth_values_normalized = depth_values/max_projection_value
-        colormap = get_cmap(depth_values_normalized)
-
-        # plot 3D projected points in simulation referential (-z, y, x)
-        points_in_ned = points_in_ned.reshape([-1, 3])
-        ax.scatter(-points_in_ned[:, 2], points_in_ned[:, 1],
-                   points_in_ned[:, 0], c=colormap, s=5)
 
     plt.show()
     plt.pause(0.2)
