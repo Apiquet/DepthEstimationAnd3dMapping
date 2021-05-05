@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Function to evaluation segmentation module
+Functions to manage tflite interpreter and a depth map
 """
 
 import cv2

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Function to evaluation segmentation module
+Functions to manage the 3d simulation
 """
 
 import cv2
@@ -144,22 +144,23 @@ def get_3d_points_from_depthmap(points_in_ned, depth_values,
     return points_in_ned, depth_values
 
 
-def get_3d_pos_from_x_orientation(x_orientation):
+def get_3d_pos_from_x_orientation(x_orientation, norm=1):
     """
     Get a 3d position x, y, z for a specific x orientation in degrees
 
     Args:
         - (float) orientation around x axis
+        - (float) norm to rescale output vector
     Return:
-        - (float) x position [0; 1]
-        - (float) y position [0; 1]
-        - (float) z position [0; 1]
+        - (float) x position [0; 1] * norm
+        - (float) y position [0; 1] * norm
+        - (float) z position [0; 1] * norm
     """
     x_orientation_rad = math.radians(x_orientation)
     x_pos = 0
     y_pos = -math.sin(x_orientation_rad)
     z_pos = math.cos(x_orientation_rad)
-    return x_pos, y_pos, z_pos
+    return x_pos*norm, y_pos*norm, z_pos*norm
 
 
 def get_closest_corner(orientation, corners_distance):
@@ -272,11 +273,11 @@ def plot_2d_top_view_referential(ax, x_orientation, orientations_todo,
         ax.text(-z_pos, y_pos, str(orientation)+'°', color='g', size=15)
 
     # get robot orientation in real referential
-    x_pos, y_pos, z_pos = get_3d_pos_from_x_orientation(x_orientation)
+    x_pos, y_pos, z_pos = get_3d_pos_from_x_orientation(x_orientation, norm=1.5)
 
     # plot arrow for robot orientation in simulation referential (-z, y, x)
-    ax.arrow(0, 0, -z_pos, y_pos, head_width=0.05, head_length=0.1, color='black')
-    ax.text(-z_pos, y_pos, str(orientation)+'°', color='black', size=15)
+    ax.arrow(0, 0, -z_pos, y_pos, head_width=0.05, head_length=0.2, color='black')
+    ax.text(-z_pos, y_pos, 'robot', color='black', size=15)
 
     ax.set_xlim(-3, 3)
     ax.set_ylim(-3, 3)
