@@ -209,7 +209,7 @@ def plot_arrow_text(ax, x0_1, x0_2, x0_3, x1_1, x1_2, x1_3, dist, txt, c, s,
         - (list) txt_offset: offset on text position, format [x, y, z]
     """
     if txt_offset is None:
-        txt_offset=[0, 0, 0]
+        txt_offset = [0, 0, 0]
 
     ax.quiver(x0_1, x0_2, x0_3, x1_1, x1_2, x1_3,
               length=dist, normalize=True, color=c)
@@ -275,7 +275,7 @@ def plot_2d_top_view_referential(ax, x_orientation, orientations_todo,
 
     # orientations to do
     for orientation in orientations_done:
-        x_pos, y_pos, z_pos = get_3d_pos_from_x_orientation(orientation)
+        _, y_pos, z_pos = get_3d_pos_from_x_orientation(orientation)
         # simulation referential (-z, y, x)
         ax.arrow(0, 0, -z_pos, y_pos, head_width=0.05, head_length=0.1, color='g')
         ax.text(-z_pos, y_pos, str(orientation)+'°', color='g', size=15)
@@ -446,6 +446,20 @@ def plot_env(fig, x_orientation, points_in_3d, depth_values, rgb_img,
     ax = fig.add_subplot(121, projection='3d')
     ax2 = fig.add_subplot(222)
     ax3 = fig.add_subplot(224)
+
+    # Hide grid lines
+    ax2.grid(False)
+
+    # Hide axes ticks
+    ax2.set_xticks([])
+    ax2.set_yticks([])
+
+    # Hide grid lines
+    ax3.grid(False)
+
+    # Hide axes ticks
+    ax3.set_xticks([])
+    ax3.set_yticks([])
 
     if len(points_in_3d) > 0:
         max_projection_value = max(depth_values)
