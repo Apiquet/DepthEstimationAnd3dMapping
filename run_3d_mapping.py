@@ -19,16 +19,16 @@ from threading import Thread
 import re
 import time
 
-import cv2
-import matplotlib
-matplotlib.interactive(True)
-
-import numpy as np
-import serial
-
 from utils import depth_manager
 from utils import projections
 
+import cv2
+import matplotlib
+import numpy as np
+import serial
+
+
+matplotlib.interactive(True)
 
 # initialize x orientation
 X_ORIENTATION = 0
@@ -67,18 +67,18 @@ def update_orientation(ser):
     while True:
         serial_msg_bytes = ser.readline()
         serial_msg = serial_msg_bytes.decode()
-        dx, dy, dz = parse_serial(serial_msg)
+        d_x, _, _ = parse_serial(serial_msg)
 
         # The gyroscope values are in degrees-per-second
         # divide each value by the number of samples per second
-        dx_normalized = dx / GYROSCOPE_SAMPLE_RATE
+        dx_normalized = d_x / GYROSCOPE_SAMPLE_RATE
 
         # remove noise
         if abs(dx_normalized) > 0.004:
             # update orientation
             X_ORIENTATION = X_ORIENTATION - dx_normalized*1.25
             X_ORIENTATION = X_ORIENTATION%360
-        
+
         if STOP_THREAD:
             break
 
@@ -189,7 +189,7 @@ def main():
     # close all and terminate thread
     cv2.destroyAllWindows()
     matplotlib.pyplot.close()
-    
+
     STOP_THREAD = True
     thread_orientation.join()
 
