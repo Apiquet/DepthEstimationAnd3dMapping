@@ -12,6 +12,7 @@ import random
 from matplotlib import pyplot as plt
 from matplotlib import cm
 import numpy as np
+from PIL import Image
 
 from . import depth_manager
 
@@ -333,12 +334,21 @@ def save_3d_scene(path, points_in_3d, depth_values, images=None,
 
     if images is not None:
         np.save(path + 'images.npy', images)
+        for key, value in images.items():
+            im = Image.fromarray(images[key])
+            im.save(path + 'image_' + str(key) + '_degrees.png')
 
     if depth_maps is not None:
         np.save(path + 'depth_maps.npy', depth_maps)
+        for key, value in depth_maps.items():
+            im = Image.fromarray(value)
+            im.save(path + 'depthmap_' + str(key) + '_degrees.png')
 
     if overlaps is not None:
         np.save(path + 'overlaps.npy', overlaps)
+        for key, value in overlaps.items():
+            im = Image.fromarray(value)
+            im.save(path + 'overlaps_' + str(key) + '_degrees.png')
 
 
 def load_3d_scene(path):
@@ -403,7 +413,7 @@ def plot_3d_scene(fig, points_in_3d, depth_values):
 
 def plot_env(fig, x_orientation, points_in_3d, depth_values, rgb_img,
              interpreter, orientations_done, orientations_todo,
-             depth_map, overlaps_img_depth, images, depth_maps,
+             depth_map, images, depth_maps, overlaps_img_depth,
              corners_distance, max_projection_value=2., per_mil_to_keep=1,
              offset_ok=2.5, project_depth=True, percentage_margin_on_depth=0):
     """
@@ -454,10 +464,11 @@ def plot_env(fig, x_orientation, points_in_3d, depth_values, rgb_img,
                 # get 3d points in real referential
                 depth_map = depth_manager.run_tflite_interpreter(rgb_img,
                                                                  interpreter)
-                overlap = depth_manager.overlap_img_with_segmap(rgb_img,
-                                                                depth_map)
-                images[orientation] = np.asarray(rgb_img, dtype="int32")
-                depth_maps[orientation] = depth_map
+                overlap, depth_map_3chn = \
+                    depth_manager.overlap_img_with_segmap(rgb_img,
+                                                          depth_map)
+                images[orientation] = np.asarray(rgb_img, dtype="uint8")
+                depth_maps[orientation] = depth_map_3chn
                 overlaps_img_depth[orientation] = overlap
 
                 ax2.imshow(overlap)
