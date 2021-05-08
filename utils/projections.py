@@ -96,7 +96,7 @@ def get_rotation_matrix(orientation):
     return rotation_matrix
 
 
-def get_3d_points_from_depthmap(points_in_ned, depth_values,
+def get_3d_points_from_depthmap(points_in_3d, depth_values,
                                 depth_map, x_orientation_degrees,
                                 per_mil_to_keep=1):
     """
@@ -104,7 +104,7 @@ def get_3d_points_from_depthmap(points_in_ned, depth_values,
     Uses global variable x_orientation
 
     Args:
-        - (np.array) points_in_ned array to add new 3D points
+        - (np.array) points_in_3d array to add new 3D points
         - (list) depth_values list to add the depth value of each point
         - (cv2 image) depth_map format (width, height, 1)
         - (float) x orientation of the robot in degrees
@@ -139,9 +139,9 @@ def get_3d_points_from_depthmap(points_in_ned, depth_values,
             point_3d_after_rotation = np.matmul(
                 get_rotation_matrix(math.radians(x_orientation_degrees)),
                 point_3d_before_rotation)
-            points_in_ned = np.append(points_in_ned, point_3d_after_rotation)
+            points_in_3d = np.append(points_in_3d, point_3d_after_rotation)
             depth_values.append(depth_value)
-    return points_in_ned, depth_values
+    return points_in_3d, depth_values
 
 
 def get_3d_pos_from_x_orientation(x_orientation, norm=1):
@@ -283,13 +283,13 @@ def plot_2d_top_view_referential(ax, x_orientation, orientations_todo,
     ax.set_ylim(-3, 3)
 
 
-def plot_3d_points(ax, points_in_ned, depth_values,
+def plot_3d_points(ax, points_in_3d, depth_values,
                    max_projection_value):
     """
     Function to plot 3d points in environment with a colormap from get_cmap()
 
     Args:
-        - (np.array) points_in_ned to display in the 3D env
+        - (np.array) points_in_3d to display in the 3D env
         - (list) depth_values to calculate cmap and boundaries
         - (float) max_projection_value max depth values
     Return:
@@ -301,16 +301,46 @@ def plot_3d_points(ax, points_in_ned, depth_values,
     colormap = get_cmap(depth_values_normalized)
 
     # plot 3D projected points in simulation referential (-z, y, x)
-    points_in_ned = points_in_ned.reshape([-1, 3])
-    ax.scatter(-points_in_ned[:, 2], points_in_ned[:, 1],
-               points_in_ned[:, 0], c=colormap, s=5)
+    points_in_3d = points_in_3d.reshape([-1, 3])
+    ax.scatter(-points_in_3d[:, 2], points_in_3d[:, 1],
+               points_in_3d[:, 0], c=colormap, s=5)
 
 
-def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
-             interpreter, project_depth, orientations_done, orientations_todo,
+def save_3d_scene(path, points_in_3d, depth_values):
+    os.makedirs(path, exist_ok=True)
+    np.savetxt(path + 'points_in_3d.txt', points_in_3d, fmt='%f')
+    np.savetxt(path + 'depth_values.txt', depth_values, fmt='%f')
+
+
+def load_3d_scene(path):
+    points_in_3d = np.loadtxt(path + 'points_in_3d.txt', dtype=float)
+    depth_values = np.loadtxt(path + 'depth_values.txt', dtype=float)
+    return points_in_3d, depth_values
+
+
+def plot_3d_scene(fig, points_in_3d, depth_values):
+    ax = fig.add_subplot(111, projection='3d')
+
+    # get colormap
+    min_projection_value = min(depth_values)
+    max_projection_value = max(depth_values)
+    depth_values_normalized = depth_values/max_projection_value
+    colormap = get_cmap(depth_values_normalized)
+
+    # plot 3D projected points in simulation referential (-z, y, x)
+    points_in_3d = points_in_3d.reshape([-1, 3])
+    ax.scatter(-points_in_3d[:, 2], points_in_3d[:, 1],
+               points_in_3d[:, 0], c=colormap, s=5)
+
+    plt.show()
+    plt.pause(0.5)
+
+
+def plot_env(fig, x_orientation, points_in_3d, depth_values, rgb_img,
+             interpreter, orientations_done, orientations_todo,
              depth_map, overlaps_img_depth, corners_distance,
              min_projection_value=1., max_projection_value=2.,
-             per_mil_to_keep=1, offset_ok=2.5,
+             per_mil_to_keep=1, offset_ok=2.5, project_depth=True,
              percentage_margin_on_depth=0):
     """
     Project depth values into 3D point according to the robot orientation
@@ -319,11 +349,10 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
     Args:
         - (matplotlib.figure) fig to plot environment
         - (float) x_orientation of the robot
-        - (np.array) points_in_ned to display in the 3D env
+        - (np.array) points_in_3d to display in the 3D env
         - (list) depth_values to calculate cmap and boundaries
         - (cv2 image) image in rgb format
         - (tf.lite.Interpreter) tflite interpreter
-        - (boolean) project_depth enables depth calculation and projection
         - (list) orientations_done list of orientations already projected
         - (list) orientations_todo list of orientations to project
         - (cv2 image) depth_map format (width, height, 1)
@@ -334,6 +363,7 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
         - (int) per_mil_to_keep: per-mil of depth points to project
         - (float) offset to accept the current orientation of the robot to do
             and angle in orientations_todo
+        - (boolean) project_depth enables depth calculation and projection
         - (float) margin percentage to remove from the depth [0: 100]
     """
     plt.gcf().clear()
@@ -342,10 +372,10 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
     ax2 = fig.add_subplot(222)
     ax3 = fig.add_subplot(224)
 
-    if len(points_in_ned) > 0:
+    if len(points_in_3d) > 0:
         min_projection_value = min(depth_values)
         max_projection_value = max(depth_values)
-        plot_3d_points(ax, points_in_ned, depth_values,
+        plot_3d_points(ax, points_in_3d, depth_values,
                        max_projection_value)
 
     plot_referential(ax, x_orientation, orientations_todo, orientations_done,
@@ -389,8 +419,8 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
                     corners_distance[orientation] =\
                         [depth_map[0, 0], depth_map[0, -1]]
 
-                points_in_ned, depth_values = \
-                    get_3d_points_from_depthmap(points_in_ned, depth_values,
+                points_in_3d, depth_values = \
+                    get_3d_points_from_depthmap(points_in_3d, depth_values,
                                                 depth_map, x_orientation,
                                                 per_mil_to_keep)
                 orientations_done.append(orientation)
@@ -402,4 +432,4 @@ def plot_env(fig, x_orientation, points_in_ned, depth_values, rgb_img,
     plt.show()
     plt.pause(0.2)
 
-    return depth_map, points_in_ned, depth_values
+    return depth_map, points_in_3d, depth_values
