@@ -19,13 +19,13 @@ from threading import Thread
 import re
 import time
 
-from utils import depth_manager
-from utils import projections
-
 import cv2
 import matplotlib
 import numpy as np
 import serial
+
+from utils import depth_manager
+from utils import projections
 
 
 matplotlib.interactive(True)
@@ -119,8 +119,24 @@ def main():
         type=int,
         help="Use N% margin on depth map to avoid potential outliers"
     )
+    parser.add_argument(
+        "-s",
+        "--display_saved_scene",
+        required=False,
+        action="store_true",
+        help="To specify if wanted to display saved scene at output path."
+    )
 
     args = parser.parse_args()
+
+    fig_simulation = matplotlib.pyplot.figure()
+
+    if args.display_saved_scene:
+        points_in_3d, depth_values, images, depth_maps, overlaps_img_depth = \
+            projections.load_3d_scene(args.output_path)
+        matplotlib.interactive(False)
+        projections.plot_3d_scene(fig_simulation, points_in_3d, depth_values)
+        return
 
     # connect to the Serial
     serial_connection = serial.Serial('COM3', 9600)
@@ -140,8 +156,6 @@ def main():
     ret, frame = vid.read()
     rgb_img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    fig_simulation = matplotlib.pyplot.figure()
-
     points_in_3d = np.array([])
     depth_values = []
 
@@ -152,7 +166,10 @@ def main():
 
     depth_map = depth_manager.run_tflite_interpreter(rgb_img, interpreter)
 
+    # keep images, depth maps and overlaps for each orientation
     # overlaps with 0.6 alpha between image and depth
+    images = {}
+    depth_maps = {}
     overlaps_img_depth = {}
 
     # distance of the corners for each depthmap for rescaling purpose
@@ -165,18 +182,22 @@ def main():
             rgb_img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
             if ret:
-                depth_map, points_in_3d, depth_values = \
-                    projections.plot_env(
-                        fig_simulation, X_ORIENTATION, points_in_3d, depth_values,
-                        rgb_img, interpreter, orientations_done,
-                        orientations_todo, depth_map, overlaps_img_depth,
-                        corners_distance, per_mil_to_keep=args.permil_to_project,
-                        percentage_margin_on_depth=args.percentage_margin)
+                depth_map, points_in_3d, depth_values,\
+                    images, depth_maps, overlaps = \
+                        projections.plot_env(
+                            fig_simulation, X_ORIENTATION, points_in_3d,
+                            depth_values, rgb_img, interpreter,
+                            orientations_done, orientations_todo, depth_map,
+                            images, depth_maps, overlaps_img_depth,
+                            corners_distance,
+                            per_mil_to_keep=args.permil_to_project,
+                            percentage_margin_on_depth=args.percentage_margin)
 
             # stop if all todo orientations were done
             if not orientations_todo:
                 projections.save_3d_scene(args.output_path, points_in_3d,
-                                          depth_values)
+                                          depth_values, images, depth_maps,
+                                          overlaps)
 
                 matplotlib.pyplot.gcf().clear()
                 matplotlib.interactive(False)
