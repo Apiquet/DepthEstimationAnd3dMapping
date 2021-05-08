@@ -99,7 +99,7 @@ def overlap_img_with_segmap(img, module_output):
 
     overlap = Image.blend(im_pil, seg_pil, alpha=0.6)
 
-    return np.array(overlap)
+    return np.array(overlap), module_output_3chn
 
 
 def preprocess_image(rgb_img, resize_shape):
@@ -190,7 +190,7 @@ def plt_pred_on_img(module, image, module_input_shape,
     module_input = preprocess_image(image, module_input_shape)
     module_output = module.signatures[signature](module_input)
     np_module_output = module_output['default'].numpy().squeeze()
-    overlap = overlap_img_with_segmap(image, np_module_output)
+    overlap, _ = overlap_img_with_segmap(image, np_module_output)
 
     if plot_img:
         plt.show(overlap)
