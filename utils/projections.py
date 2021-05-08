@@ -314,7 +314,8 @@ def plot_3d_points(ax, points_in_3d, depth_values,
                points_in_3d[:, 0], c=colormap, s=5)
 
 
-def save_3d_scene(path, points_in_3d, depth_values):
+def save_3d_scene(path, points_in_3d, depth_values, images=None,
+                  depth_maps=None, overlaps=None):
     """
     Function save numpy arrays of the 3D scene
 
@@ -322,10 +323,22 @@ def save_3d_scene(path, points_in_3d, depth_values):
         - (str) path to save 3D scene
         - (np.array) points_in_3d to display in the 3D env
         - (list) depth_values to calculate cmap and boundaries
+        - (dict of orientation: numpy.array) images used for projections
+        - (dict of orientation: numpy.array) depth_maps used for projections
+        - (dict of orientation: numpy.array) overlap between img and depth_map
     """
     os.makedirs(path, exist_ok=True)
     np.savetxt(path + 'points_in_3d.txt', points_in_3d, fmt='%f')
     np.savetxt(path + 'depth_values.txt', depth_values, fmt='%f')
+
+    if images is not None:
+        np.save(path + 'images.npy', images)
+
+    if depth_maps is not None:
+        np.save(path + 'depth_maps.npy', depth_maps)
+
+    if overlaps is not None:
+        np.save(path + 'overlaps.npy', overlaps)
 
 
 def load_3d_scene(path):
@@ -337,10 +350,27 @@ def load_3d_scene(path):
     Return:
         - (np.array) points_in_3d to display in the 3D env
         - (np.array) depth_values to calculate cmap and boundaries
+        The next returned values are None if path/object does not exist
+        - (dict of orientation: numpy.array) images used for projections
+        - (dict of orientation: numpy.array) depth_maps used for projections
+        - (dict of orientation: numpy.array) overlap between img and depth_map
     """
     points_in_3d = np.loadtxt(path + 'points_in_3d.txt', dtype=float)
     depth_values = np.loadtxt(path + 'depth_values.txt', dtype=float)
-    return points_in_3d, depth_values
+
+    images, depth_maps, overlaps = None, None, None
+
+    if os.path.exists(path + 'images.npy'):
+        images = np.load(path + 'images.npy', allow_pickle='TRUE').item()
+
+    if os.path.exists(path + 'depth_maps.npy'):
+        depth_maps = np.load(path + 'depth_maps.npy',
+                             allow_pickle='TRUE').item()
+
+    if os.path.exists(path + 'overlaps.npy'):
+        overlaps = np.load(path + 'overlaps.npy', allow_pickle='TRUE').item()
+
+    return points_in_3d, depth_values, images, depth_maps, overlaps
 
 
 def plot_3d_scene(fig, points_in_3d, depth_values):
@@ -373,9 +403,9 @@ def plot_3d_scene(fig, points_in_3d, depth_values):
 
 def plot_env(fig, x_orientation, points_in_3d, depth_values, rgb_img,
              interpreter, orientations_done, orientations_todo,
-             depth_map, overlaps_img_depth, corners_distance,
-             max_projection_value=2., per_mil_to_keep=1, offset_ok=2.5,
-             project_depth=True, percentage_margin_on_depth=0):
+             depth_map, overlaps_img_depth, images, depth_maps,
+             corners_distance, max_projection_value=2., per_mil_to_keep=1,
+             offset_ok=2.5, project_depth=True, percentage_margin_on_depth=0):
     """
     Project depth values into 3D point according to the robot orientation
     Uses global variable x_orientation
@@ -390,7 +420,9 @@ def plot_env(fig, x_orientation, points_in_3d, depth_values, rgb_img,
         - (list) orientations_done list of orientations already projected
         - (list) orientations_todo list of orientations to project
         - (cv2 image) depth_map format (width, height, 1)
-        - (dict of orientation: PIL image) overlap between img and depth_map
+        - (dict of orientation: numpy.array) images used for projections
+        - (dict of orientation: numpy.array) depth_maps used for projections
+        - (dict of orientation: numpy.array) overlap between img and depth_map
         - (dict of tuples 2 values) format orientation: (top left, top right)
         - (float) max_projection_value max depth value
         - (int) per_mil_to_keep: per-mil of depth points to project
@@ -424,6 +456,8 @@ def plot_env(fig, x_orientation, points_in_3d, depth_values, rgb_img,
                                                                  interpreter)
                 overlap = depth_manager.overlap_img_with_segmap(rgb_img,
                                                                 depth_map)
+                images[orientation] = np.asarray(rgb_img, dtype="int32")
+                depth_maps[orientation] = depth_map
                 overlaps_img_depth[orientation] = overlap
 
                 ax2.imshow(overlap)
@@ -463,4 +497,5 @@ def plot_env(fig, x_orientation, points_in_3d, depth_values, rgb_img,
     plt.show()
     plt.pause(0.2)
 
-    return depth_map, points_in_3d, depth_values
+    return depth_map, points_in_3d, depth_values,\
+        images, depth_maps, overlaps_img_depth
