@@ -20,7 +20,9 @@ import re
 import time
 
 import cv2
-import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.interactive(True)
+
 import numpy as np
 import serial
 
@@ -121,7 +123,7 @@ def main():
     ret, frame = vid.read()
     rgb_img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    fig_simulation = plt.figure()
+    fig_simulation = matplotlib.pyplot.figure()
 
     points_in_3d = np.array([])
     depth_values = []
@@ -147,12 +149,12 @@ def main():
 
             if ret:
                 depth_map, points_in_3d, depth_values = \
-                projections.plot_env(
-                    fig_simulation, X_ORIENTATION, points_in_3d, depth_values,
-                    rgb_img, interpreter, orientations_done,
-                    orientations_todo, depth_map, overlaps_img_depth,
-                    corners_distance, per_mil_to_keep=args.permil_to_project,
-                    percentage_margin_on_depth=args.percentage_margin)
+                    projections.plot_env(
+                        fig_simulation, X_ORIENTATION, points_in_3d, depth_values,
+                        rgb_img, interpreter, orientations_done,
+                        orientations_todo, depth_map, overlaps_img_depth,
+                        corners_distance, per_mil_to_keep=args.permil_to_project,
+                        percentage_margin_on_depth=args.percentage_margin)
 
             # stop if all todo orientations were done
             if not orientations_todo:
