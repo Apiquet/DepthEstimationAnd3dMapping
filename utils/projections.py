@@ -5,17 +5,13 @@
 Functions to manage the 3d simulation
 """
 
-import cv2
 import math
-import imageio
-from matplotlib import pyplot as plt
-from PIL import Image
-import tensorflow as tf
-from tqdm import tqdm
 import os
+import random
+
+from matplotlib import pyplot as plt
 from matplotlib import cm
 import numpy as np
-import random
 
 from . import depth_manager
 
@@ -46,6 +42,16 @@ def init_camera_params(image_width, image_height, h_fov_degrees,
         - (float) horizontal fov in degrees
         - (float) vertical fov in degrees
     """
+    global IMAGE_WIDTH
+    global IMAGE_HEIGHT
+    global H_FOV_DEGREES
+    global H_FOV_RAD
+    global V_FOV_RAD
+    global X_FOCAL
+    global Y_FOCAL
+    global X_CENTER_COORDINATE
+    global Y_CENTER_COORDINATE
+
     IMAGE_WIDTH = image_width
     IMAGE_HEIGHT = image_height
 
@@ -172,42 +178,45 @@ def get_closest_corner(orientation, corners_distance):
         - (float) current orientation for a depth map to rescale
         - (dict of tuples 2 values) format orientation: (top left, top right)
     Return:
-        - (bool) isLeft true if left, false if right
+        - (bool) is_left true if left, false if right
         - (float) value for the rescale
     """
-    isLeft = True
-    value = 0
+    is_left = True
 
     closest_orientation = min(corners_distance.keys(),
                               key=lambda x: abs(x-orientation))
 
     if closest_orientation < orientation:
-        isLeft = False
+        is_left = False
 
-    return isLeft, corners_distance[closest_orientation][isLeft]
+    return is_left, corners_distance[closest_orientation][is_left]
 
 
 def plot_arrow_text(ax, x0_1, x0_2, x0_3, x1_1, x1_2, x1_3, dist, txt, c, s,
-                    txt_offset=[0, 0, 0]):
+                    txt_offset=None):
     """
-    Function to call to know which corner to rescale for a given orientation
-    And the value to use
+    Function to plot an arrow and a text at the end of it
 
     Args:
-        - (float) current orientation for a depth map to rescale
-        - (dict of tuples 2 values) format orientation: (top left, top right)
-    Return:
-        - (bool) isLeft true if left, false if right
-        - (float) value for the rescale
+        - (matplotlib axis) ax to plot arrows
+        - (float) x0_1, x0_2, x0_3: arrow origin
+        - (float) x1_1, x1_2, x1_3: direction coordinate
+        - (float) dist: norm of the arrow
+        - (str) txt: text to print on arrow end
+        - (str) c: color
+        - (int) s: size
+        - (list) txt_offset: offset on text position, format [x, y, z]
     """
+    if txt_offset is None:
+        txt_offset=[0, 0, 0]
+
     ax.quiver(x0_1, x0_2, x0_3, x1_1, x1_2, x1_3,
               length=dist, normalize=True, color=c)
     ax.text(x1_1*dist+txt_offset[0], x1_2*dist+txt_offset[1],
             x1_3*dist+txt_offset[2], txt, color=c, size=s)
 
 
-def plot_referential(ax, min_projection_value, max_projection_value,
-                     x_orientation=None):
+def plot_referential(ax, max_projection_value, x_orientation=None):
     """
     Function to plot:
         - x, y, z arrows for the referential
@@ -215,10 +224,9 @@ def plot_referential(ax, min_projection_value, max_projection_value,
         - the arrows for todo orientations (red) and orientations done (green)
 
     Args:
-        - (matplotlib ax3D) ax to plot arrows
-        - (float) min_projection_value min depth value
+        - (matplotlib axis) ax to plot arrows
         - (float) max_projection_value max depth value
-        - (float) orientation of the robot in 3D
+        - (float) orientation of the robot (not required)
     """
     # plot origin as blue sphere
     ax.scatter(0, 0, s=100, c='b')
@@ -242,7 +250,7 @@ def plot_referential(ax, min_projection_value, max_projection_value,
 
 
 def plot_2d_top_view_referential(ax, x_orientation, orientations_todo,
-                                 orientations_done,):
+                                 orientations_done):
     """
     Function to plot:
         - the robot arrow in black
@@ -259,7 +267,7 @@ def plot_2d_top_view_referential(ax, x_orientation, orientations_todo,
 
     # orientations to do
     for orientation in orientations_todo:
-        x_pos, y_pos, z_pos = get_3d_pos_from_x_orientation(orientation)
+        _, y_pos, z_pos = get_3d_pos_from_x_orientation(orientation)
         # simulation referential (-z, y, x)
         ax.arrow(0, 0, -z_pos, y_pos, head_width=0.05, head_length=0.1, color='r')
         ax.text(-z_pos, y_pos, str(orientation)+'°', color='r', size=15)
@@ -288,6 +296,7 @@ def plot_3d_points(ax, points_in_3d, depth_values,
     Function to plot 3d points in environment with a colormap from get_cmap()
 
     Args:
+        - (matplotlib ax3D) ax to plot arrows
         - (np.array) points_in_3d to display in the 3D env
         - (list) depth_values to calculate cmap and boundaries
         - (float) max_projection_value max depth values
@@ -306,28 +315,52 @@ def plot_3d_points(ax, points_in_3d, depth_values,
 
 
 def save_3d_scene(path, points_in_3d, depth_values):
+    """
+    Function save numpy arrays of the 3D scene
+
+    Args:
+        - (str) path to save 3D scene
+        - (np.array) points_in_3d to display in the 3D env
+        - (list) depth_values to calculate cmap and boundaries
+    """
     os.makedirs(path, exist_ok=True)
     np.savetxt(path + 'points_in_3d.txt', points_in_3d, fmt='%f')
     np.savetxt(path + 'depth_values.txt', depth_values, fmt='%f')
 
 
 def load_3d_scene(path):
+    """
+    Function to load saved 3D scene with save_3d_scene() function
+
+    Args:
+        - (str) path of the saved 3D scene
+    Return:
+        - (np.array) points_in_3d to display in the 3D env
+        - (np.array) depth_values to calculate cmap and boundaries
+    """
     points_in_3d = np.loadtxt(path + 'points_in_3d.txt', dtype=float)
     depth_values = np.loadtxt(path + 'depth_values.txt', dtype=float)
     return points_in_3d, depth_values
 
 
 def plot_3d_scene(fig, points_in_3d, depth_values):
+    """
+    Function plot a 3D scene from points and depth values
+
+    Args:
+        - (matplotlib figure) fig
+        - (np.array) points_in_3d to display in the 3D env
+        - (list) depth_values to calculate cmap and boundaries
+    """
     ax = fig.add_subplot(111, projection='3d')
 
     # get colormap
-    min_projection_value = min(depth_values)
     max_projection_value = max(depth_values)
     depth_values_normalized = depth_values/max_projection_value
     colormap = get_cmap(depth_values_normalized)
-    
+
     # plot referential x, y, z
-    plot_referential(ax, min_projection_value, max_projection_value)
+    plot_referential(ax, max_projection_value)
 
     # plot 3D projected points in simulation referential (-z, y, x)
     points_in_3d = points_in_3d.reshape([-1, 3])
@@ -341,9 +374,8 @@ def plot_3d_scene(fig, points_in_3d, depth_values):
 def plot_env(fig, x_orientation, points_in_3d, depth_values, rgb_img,
              interpreter, orientations_done, orientations_todo,
              depth_map, overlaps_img_depth, corners_distance,
-             min_projection_value=1., max_projection_value=2.,
-             per_mil_to_keep=1, offset_ok=2.5, project_depth=True,
-             percentage_margin_on_depth=0):
+             max_projection_value=2., per_mil_to_keep=1, offset_ok=2.5,
+             project_depth=True, percentage_margin_on_depth=0):
     """
     Project depth values into 3D point according to the robot orientation
     Uses global variable x_orientation
@@ -360,7 +392,6 @@ def plot_env(fig, x_orientation, points_in_3d, depth_values, rgb_img,
         - (cv2 image) depth_map format (width, height, 1)
         - (dict of orientation: PIL image) overlap between img and depth_map
         - (dict of tuples 2 values) format orientation: (top left, top right)
-        - (float) min_projection_value min depth value
         - (float) max_projection_value max depth value
         - (int) per_mil_to_keep: per-mil of depth points to project
         - (float) offset to accept the current orientation of the robot to do
@@ -375,13 +406,11 @@ def plot_env(fig, x_orientation, points_in_3d, depth_values, rgb_img,
     ax3 = fig.add_subplot(224)
 
     if len(points_in_3d) > 0:
-        min_projection_value = min(depth_values)
         max_projection_value = max(depth_values)
         plot_3d_points(ax, points_in_3d, depth_values,
                        max_projection_value)
 
-    plot_referential(ax, min_projection_value, max_projection_value,
-                     x_orientation=x_orientation)
+    plot_referential(ax, max_projection_value, x_orientation=x_orientation)
 
     plot_2d_top_view_referential(ax3, x_orientation,
                                  orientations_todo, orientations_done)
@@ -414,9 +443,9 @@ def plot_env(fig, x_orientation, points_in_3d, depth_values, rgb_img,
                     corners_distance[orientation] =\
                         [depth_map[0, 0, 0], depth_map[0, -1, 0]]
                 else:
-                    isLeft, corner_value =\
+                    is_left, corner_value =\
                         get_closest_corner(orientation, corners_distance)
-                    depth_map = depth_map / depth_map[0, -int(not isLeft)]\
+                    depth_map = depth_map / depth_map[0, -int(not is_left)]\
                         * corner_value
                     corners_distance[orientation] =\
                         [depth_map[0, 0], depth_map[0, -1]]
