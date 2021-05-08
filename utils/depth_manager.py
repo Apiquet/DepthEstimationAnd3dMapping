@@ -5,15 +5,16 @@
 Functions to manage tflite interpreter and a depth map
 """
 
+import os
+import urllib.request
+
 import cv2
 import imageio
 from matplotlib import pyplot as plt
 from PIL import Image
 import tensorflow as tf
 from tqdm import tqdm
-import os
 import numpy as np
-import urllib.request
 
 
 def get_tflite_interpreter(tflite_model_url, path_to_save, verbose=False):
@@ -36,8 +37,8 @@ def get_tflite_interpreter(tflite_model_url, path_to_save, verbose=False):
 
     if verbose:
         # Get input and output tensors.
-        input_details = interpreter.get_input_details()
-        output_details = interpreter.get_output_details()
+        print("Input details :", interpreter.get_input_details())
+        print("Output details :", interpreter.get_output_details())
 
     return interpreter
 
@@ -137,10 +138,10 @@ def crop_depth_map(depth_map, margin_percentage):
     """
     width, height, _ = depth_map.shape
     margin_from_0_to_1 = margin_percentage/100
-    
+
     first_width_idx = int(width * margin_from_0_to_1)
     first_height_idx = int(height * margin_from_0_to_1)
-    
+
     last_width_idx = int(width * (1-margin_from_0_to_1))
     last_height_idx = int(height * (1-margin_from_0_to_1))
 
@@ -197,7 +198,7 @@ def plt_pred_on_img(module, image, module_input_shape,
     if save_path is not None:
         plt.savefig(save_path)
     plt.close()
-    return overlap
+    return Image.fromarray(overlap)
 
 
 def plot_pred_on_video(video_path, module, module_input_shape,
