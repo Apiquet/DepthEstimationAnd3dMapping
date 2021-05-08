@@ -36,6 +36,8 @@ X_ORIENTATION = 0
 # 119 got from Arduino with IMU.gyroscopeSampleRate();
 GYROSCOPE_SAMPLE_RATE = 119
 
+# global var to stop thread
+STOP_THREAD = False
 
 def parse_serial(serial_msg):
     """
@@ -60,6 +62,7 @@ def update_orientation(ser):
         - (serial.Serial) serial to get the gyroscope data
     """
     global X_ORIENTATION
+    global STOP_THREAD
 
     while True:
         serial_msg_bytes = ser.readline()
@@ -75,10 +78,22 @@ def update_orientation(ser):
             # update orientation
             X_ORIENTATION = X_ORIENTATION - dx_normalized*1.25
             X_ORIENTATION = X_ORIENTATION%360
+        
+        if STOP_THREAD:
+            break
 
 
 def main():
+    global STOP_THREAD
+
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-o",
+        "--output_path",
+        required=True,
+        type=str,
+        help="Path to save the 3D scene."
+    )
     parser.add_argument(
         "-p",
         "--permil_to_project",
@@ -112,13 +127,15 @@ def main():
     time.sleep(2)
 
     # run the thread to update the x orientation in real time
-    Thread(target=update_orientation, args=(serial_connection,)).start()
+    thread_orientation = Thread(
+        target=update_orientation, args=(serial_connection,))
+    thread_orientation.start()
 
     interpreter = depth_manager.get_tflite_interpreter(
         "https://tfhub.dev/intel/lite-model/midas/v2_1_small/1/lite/1?lite-format=tflite",
         os.path.dirname(os.path.realpath(__file__)) + "/model/midas_v2_1_small.tflite")
 
-    vid = cv2.VideoCapture(0)
+    vid = cv2.VideoCapture(0, cv2.CAP_DSHOW)
     # get first image for depth calculation
     ret, frame = vid.read()
     rgb_img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -158,9 +175,23 @@ def main():
 
             # stop if all todo orientations were done
             if not orientations_todo:
+                projections.save_3d_scene(args.output_path, points_in_3d,
+                                          depth_values)
+
+                matplotlib.pyplot.gcf().clear()
+                matplotlib.interactive(False)
+                projections.plot_3d_scene(fig_simulation, points_in_3d,
+                                          depth_values)
                 break
     except KeyboardInterrupt:
         pass
+
+    # close all and terminate thread
+    cv2.destroyAllWindows()
+    matplotlib.pyplot.close()
+    
+    STOP_THREAD = True
+    thread_orientation.join()
 
 
 if __name__ == '__main__':
