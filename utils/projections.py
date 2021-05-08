@@ -206,8 +206,8 @@ def plot_arrow_text(ax, x0_1, x0_2, x0_3, x1_1, x1_2, x1_3, dist, txt, c, s,
             x1_3*dist+txt_offset[2], txt, color=c, size=s)
 
 
-def plot_referential(ax, x_orientation, orientations_todo, orientations_done,
-                     min_projection_value, max_projection_value):
+def plot_referential(ax, min_projection_value, max_projection_value,
+                     x_orientation=None):
     """
     Function to plot:
         - x, y, z arrows for the referential
@@ -216,11 +216,9 @@ def plot_referential(ax, x_orientation, orientations_todo, orientations_done,
 
     Args:
         - (matplotlib ax3D) ax to plot arrows
-        - (float) orientation of the robot in 3D
-        - (list) orientations_done list of orientations already projected
-        - (list) orientations_todo list of orientations to project
         - (float) min_projection_value min depth value
         - (float) max_projection_value max depth value
+        - (float) orientation of the robot in 3D
     """
     # plot origin as blue sphere
     ax.scatter(0, 0, s=100, c='b')
@@ -230,12 +228,13 @@ def plot_referential(ax, x_orientation, orientations_todo, orientations_done,
     plot_arrow_text(ax, 0, 0, 0, 0, 1, 0, max_projection_value/4, 'y', 'm', 15)
     plot_arrow_text(ax, 0, 0, 0, 0, 0, 1, max_projection_value/4, 'z', 'b', 15)
 
-    # get robot orientation in real referential
-    x_pos, y_pos, z_pos = get_3d_pos_from_x_orientation(x_orientation)
+    if x_orientation:
+        # get robot orientation in real referential
+        x_pos, y_pos, z_pos = get_3d_pos_from_x_orientation(x_orientation)
 
-    # plot arrow for robot orientation in simulation referential (-z, y, x)
-    plot_arrow_text(ax, 0, 0, 0, -z_pos, y_pos, x_pos,
-                    max_projection_value/3, 'robot', 'black', 15)
+        # plot arrow for robot orientation in simulation referential (-z, y, x)
+        plot_arrow_text(ax, 0, 0, 0, -z_pos, y_pos, x_pos,
+                        max_projection_value/3, 'robot', 'black', 15)
 
     ax.set_xlim(-max_projection_value*0.7, max_projection_value*0.7)
     ax.set_ylim(-max_projection_value*0.7, max_projection_value*0.7)
@@ -326,6 +325,9 @@ def plot_3d_scene(fig, points_in_3d, depth_values):
     max_projection_value = max(depth_values)
     depth_values_normalized = depth_values/max_projection_value
     colormap = get_cmap(depth_values_normalized)
+    
+    # plot referential x, y, z
+    plot_referential(ax, min_projection_value, max_projection_value)
 
     # plot 3D projected points in simulation referential (-z, y, x)
     points_in_3d = points_in_3d.reshape([-1, 3])
@@ -378,8 +380,8 @@ def plot_env(fig, x_orientation, points_in_3d, depth_values, rgb_img,
         plot_3d_points(ax, points_in_3d, depth_values,
                        max_projection_value)
 
-    plot_referential(ax, x_orientation, orientations_todo, orientations_done,
-                     min_projection_value, max_projection_value)
+    plot_referential(ax, min_projection_value, max_projection_value,
+                     x_orientation=x_orientation)
 
     plot_2d_top_view_referential(ax3, x_orientation,
                                  orientations_todo, orientations_done)
