@@ -4,5 +4,6 @@ This project uses a Deep Learning algorithm for monocular depth estimation and a
 
 It can be embedded in a robot to map its environment in a 3D simulation view.
 
-The project is described [here](https://apiquet.com/2021/04/09/depth-estimation-and-3d-mapping/)
+The project is described [here](https://apiquet.com/2021/04/09/depth-estimation-and-3d-mapping/).
 
+The code is embedded on a Jetson Nano connected to an Arduino Nano which sends the gyroscope data by serial connection.
