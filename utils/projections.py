@@ -447,17 +447,13 @@ def plot_env(fig, x_orientation, points_in_3d, depth_values, rgb_img,
     ax2 = fig.add_subplot(222)
     ax3 = fig.add_subplot(224)
 
-    # Hide grid lines
+    # hide grid
     ax2.grid(False)
-
-    # Hide axes ticks
-    ax2.set_xticks([])
-    ax2.set_yticks([])
-
-    # Hide grid lines
     ax3.grid(False)
 
-    # Hide axes ticks
+    # hide ticks
+    ax2.set_xticks([])
+    ax2.set_yticks([])
     ax3.set_xticks([])
     ax3.set_yticks([])
 
