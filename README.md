@@ -45,3 +45,11 @@ An example is already saved in the repository, to see it:
 ``` shell
 python3 run_3d_mapping -s -o repo/3d_scene/
 ```
+
+The scene should look like:
+
+![Image](images/projection_example.gif)
+
+The 3D scene was done for the following room:
+
+![Image](images/projection_example_explained.gif)
