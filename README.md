@@ -46,10 +46,14 @@ An example is already saved in the repository, to see it:
 python3 run_3d_mapping -s -o repo/3d_scene/
 ```
 
-The scene should look like:
+When running the code, the behavior should look like the following one:
+
+- camera view + current orientation of the robot
+- when the robot reached a specific orientation, the depth estimation is used on the current frame
+- current 3D points are projected in the simulation view according to the depth values and the orientation of the robot
 
 ![Image](images/projection_example.gif)
 
 The 3D scene was done for the following room:
 
-![Image](images/projection_example_explained.gif)
+![Image](images/projection_example_explained.PNG)
