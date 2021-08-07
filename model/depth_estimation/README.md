@@ -8,7 +8,7 @@ The models were found on the kitti dataset benchmark: http://www.cvlibs.net/data
 
 * SILog error : "defined to measure the relationship between points in the scene irrespective of the absolute global scale" (from https://arxiv.org/pdf/2009.09934.pdf)
 
-<img src="https://render.githubusercontent.com/render/math?math=SILog=\frac{1}{T}\sum_{i}^{}d_{i}^{2}-\frac{1}{T^{2}}(\sum_{i}^{}d_{i})^{2}">
+<img src="https://render.githubusercontent.com/render/math?math=SILog = \frac{1}{T}\sum_{i}^{}d_{i}^{2}-\frac{1}{T^{2}}(\sum_{i}^{}d_{i})^{2}\text{,%20with%20}d_{i}=log(y_{i})-log(y_{i}^{*})">
 
 * sqErrorRel
 * absErrorRel
