@@ -29,7 +29,9 @@ Segmentation; 9 Dec 2020
 ** Create a way to convert existing datasets into DVPS (Depth-aware Video Panoptic Segmentation) datasets. They produceed two datasets: 
 *** Cityscapes-DVPS derived from [Cityscapes-VPS](https://paperswithcode.com/dataset/cityscapes-vps) with depth annotations 
 *** SemKITTI-DVPS derived from [SemanticKITTI](http://www.semantic-kitti.org/) with a projection of its annotated 3D point clouds to the image plane
-
+** First sub-task video panoptic segmentation: unifies semantic segmentation and instance segmentation (assign a semantic label and an ID to each pixel). Each instance should have the same ID throughout the video sequence (model should be able to track objects)
+** This model also outperform in MOTS challenge (Multi-Object TRacking and Segmentation)
+** The second sub-task is monocular depth estimation
 
 * [Patchwork](https://arxiv.org/pdf/1904.01784.pdf): A Patch-wise Attention Network for
 Efficient Object Detection and Segmentation in Video Streams
