@@ -21,8 +21,15 @@ The models were found on the kitti dataset benchmark: http://www.cvlibs.net/data
 
 ### Some papers
 
-* ViP-DeepLab: Learning Visual Perception with Depth-aware Video Panoptic
-Segmentation
+* [ViP-DeepLab](https://arxiv.org/pdf/2012.05258.pdf): Learning Visual Perception with Depth-aware Video Panoptic
+Segmentation; 9 Dec 2020
 
-* Patchwork: A Patch-wise Attention Network for
+** The paper approaches the problem by jointly performing monocular depth estimation and video panoptic segmentation.
+** They introduce a new evaluation metrics called depth-aware Video Panoptic Quality (DVPQ) (datasets hard to collect: need special depth sensors and huge amount of labeling efforts)
+** Create a way to convert existing datasets into DVPS (Depth-aware Video Panoptic Segmentation) datasets. They produceed two datasets: 
+*** Cityscapes-DVPS derived from [Cityscapes-VPS](https://paperswithcode.com/dataset/cityscapes-vps) with depth annotations 
+*** SemKITTI-DVPS derived from [SemanticKITTI](http://www.semantic-kitti.org/) with a projection of its annotated 3D point clouds to the image plane
+
+
+* [Patchwork](https://arxiv.org/pdf/1904.01784.pdf): A Patch-wise Attention Network for
 Efficient Object Detection and Segmentation in Video Streams
