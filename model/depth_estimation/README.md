@@ -25,24 +25,43 @@ The models were found on the kitti dataset benchmark: http://www.cvlibs.net/data
 Segmentation; 9 Dec 2020
 
 ** The paper approaches the problem by jointly performing monocular depth estimation and video panoptic segmentation.
+
 ** They introduce a new evaluation metrics called depth-aware Video Panoptic Quality (DVPQ) (datasets hard to collect: need special depth sensors and huge amount of labeling efforts)
+
 ** Create a way to convert existing datasets into DVPS (Depth-aware Video Panoptic Segmentation) datasets. They produceed two datasets: 
+
 *** Cityscapes-DVPS derived from [Cityscapes-VPS](https://paperswithcode.com/dataset/cityscapes-vps) with depth annotations 
+
 *** SemKITTI-DVPS derived from [SemanticKITTI](http://www.semantic-kitti.org/) with a projection of its annotated 3D point clouds to the image plane
+
 ** First sub-task video panoptic segmentation: unifies semantic segmentation and instance segmentation (assign a semantic label and an ID to each pixel). Each instance should have the same ID throughout the video sequence (model should be able to track objects)
+
 *** The video panoptic segmentation is also divided into 3 parts: semantic segmentation, center prediction and center regression
+
 ** This model also outperform in MOTS challenge (Multi-Object TRacking and Segmentation)
+
 ** The second sub-task is monocular depth estimation
+
 ** Model takes image t and t+1 concatenated horizontally as input
+
 *** Both images get encoded by the same encoder
+
 *** depth estimation, semantic prediction, instance center prediction are performed on image t
+
 *** instance center regression is done on image t+1 wrt image t
+
 ** mask IoU between regression pairs are used to propagate IDs to the next inference (largest mask IoU to propagate and new ID if an object has 0 IoU with a previous inference)
+
 ** monocular depth estimation: 
+
 *** dense regression problem with an estimated depth for each pixel
+
 *** depth = Max Depth x Sigmoid and max depth = 88 for the range KITTI dataset
+
 *** special training loss which combines scale invariant logarithmic error and relative squared error
+
 ** Dataset:
+
 *** annotation for each pixel (c, id, d) for semantic class, instance ID and depth (the model outputs the same format for each pixel)
 
 
