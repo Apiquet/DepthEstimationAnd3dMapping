@@ -34,7 +34,7 @@ Segmentation; 9 Dec 2020
 
     * SemKITTI-DVPS derived from [SemanticKITTI](http://www.semantic-kitti.org/) with a projection of its annotated 3D point clouds to the image plane
 
-  ** First sub-task video panoptic segmentation: unifies semantic segmentation and instance segmentation (assign a semantic label and an ID to each pixel). Each instance should have the same ID throughout the video sequence (model should be able to track objects)
+  * First sub-task video panoptic segmentation: unifies semantic segmentation and instance segmentation (assign a semantic label and an ID to each pixel). Each instance should have the same ID throughout the video sequence (model should be able to track objects)
 
     * The video panoptic segmentation is also divided into 3 parts: semantic segmentation, center prediction and center regression
 
