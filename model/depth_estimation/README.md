@@ -67,3 +67,13 @@ Segmentation; 9 Dec 2020
 
 * [Patchwork](https://arxiv.org/pdf/1904.01784.pdf): A Patch-wise Attention Network for
 Efficient Object Detection and Segmentation in Video Streams
+
+  * they explore the idea of hard attention aimed for latency-sensitive applications
+  
+  * their method selects and only processes a small sub-window of the frame
+  
+  * the technique then makes predictions for the full frame based on the subwindows from previous frames and the update from the current sub-window
+  
+  *  use of Q-learning based policy training strategy that enables our approach to intelligently select the sub-windows such that the staleness in the memory hurts the performance the least
+  
+  *  Q-learningbased policy training strategy that enables our approach to intelligently select the sub-windows such that the staleness in the memory hurts the performance the least
