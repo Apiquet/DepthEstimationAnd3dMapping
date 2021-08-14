@@ -79,3 +79,7 @@ Efficient Object Detection and Segmentation in Video Streams
   *  Q-learningbased policy training strategy that enables our approach to intelligently select the sub-windows such that the staleness in the memory hurts the performance the least
   
   * attention window is parameterized by its center and size
+
+* [Monodepth2](https://arxiv.org/pdf/1806.01260.pdf): Digging Into Self-Supervised Monocular Depth Estimation
+
+  * 
