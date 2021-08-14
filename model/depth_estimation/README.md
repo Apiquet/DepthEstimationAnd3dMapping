@@ -77,3 +77,5 @@ Efficient Object Detection and Segmentation in Video Streams
   *  use of Q-learning based policy training strategy that enables our approach to intelligently select the sub-windows such that the staleness in the memory hurts the performance the least
   
   *  Q-learningbased policy training strategy that enables our approach to intelligently select the sub-windows such that the staleness in the memory hurts the performance the least
+  
+  * attention window is parameterized by its center and size
