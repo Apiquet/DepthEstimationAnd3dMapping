@@ -82,4 +82,10 @@ Efficient Object Detection and Segmentation in Video Streams
 
 * [Monodepth2](https://arxiv.org/pdf/1806.01260.pdf): Digging Into Self-Supervised Monocular Depth Estimation
 
-  * 
+  * a minimum reprojection loss (designed to robustly handle occlusions)
+  
+  * a full-resolution multi-scale sampling method to reduce visual artifacts
+  
+  * auto-masking loss to ignore training pixels that violate camera motion assumption
+  
+  * Demonstrate the added value of each of the 3 previous components separatly
