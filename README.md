@@ -19,7 +19,7 @@ A piece was also printed with a 3D printer to put the electronic boards and came
 
 ## Installation
 
-- Build the code "get_IMU_output_from_Arduino" and flash it to the Arduino Nano
+- Use the Arduino IDE to build the code "get_IMU_output_from_Arduino" and flash it to the Arduino Nano
 - Clone the repository to the Jetson Nano
 - (optional) Print solidworks_parts/toprint_main_part.STL and toprint_rotation_piece.STL
 
