@@ -4,7 +4,7 @@
 
 The models were found on the kitti dataset benchmark: http://www.cvlibs.net/datasets/kitti/eval_depth.php?benchmark=depth_prediction
 
-### Metrics used 
+### Metrics used in kitti dataset benchmark
 
 * SILog error : "defined to measure the relationship between points in the scene irrespective of the absolute global scale" (from https://arxiv.org/pdf/2009.09934.pdf)
 
