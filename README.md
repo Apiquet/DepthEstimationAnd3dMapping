@@ -4,7 +4,7 @@
 
 The project is described [here](https://apiquet.com/2021/04/09/depth-estimation-and-3d-mapping/)
 
-The code estimate the depthmap from the livestream of a USB camera using a Deep Learning algorithm (Midas). Then, 3D points are mapped in the camera referential. An Arduino Nano is then used to get the orientation of the robot thanks to an IMU to project the 3D points to a 3D simulation view of the real world.
+The code estimates the depthmap from the livestream of a USB camera using a Deep Learning algorithm (Midas). Then, 3D points are mapped in 3D, thanks to its position (pixel) and depth, into the camera referential. An Arduino Nano is then used to get the orientation of the robot thanks to an IMU to project the 3D points to a 3D simulation view of the real world.
 
 It can then be embedded in a robot to map its environment while rotating around a single axis.
 
